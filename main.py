@@ -22,6 +22,11 @@ if __name__ == "__main__":
     print("--- cansend ---\n")
     can_interface = 'vcan0'
 
+    # TODO:
+    # 1. Parse command line parameters
+    # 2. Call appropriate action
+    # 3. Generate output cmd, file, ...
+
     # create a raw socket and bind it to the given CAN interface
     s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
     s.bind((can_interface,))
