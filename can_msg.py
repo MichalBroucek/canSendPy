@@ -23,6 +23,6 @@ class CanMsg:
         bytes_str = ""
         for byte in self.data:
             bytes_str += format(byte, '02X') + " "
-        return "" + self.id + " " + self.dlc + " " + bytes_str.strip()
+        return "" + str(self.id) + " " + str(self.dlc) + " " + bytes_str.strip()
 
 
