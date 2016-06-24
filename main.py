@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 
-import socket
-import struct
+from cansend.can_driver import Can_driver
 
 # CAN frame packing/unpacking (see `struct can_frame` in <linux/can.h>)
 can_frame_fmt = "=IB3x8s"
 
 
-def build_can_frame(can_id, data):
-    can_dlc = len(data)
-    data = data.ljust(8, b'\x00')
-    return struct.pack(can_frame_fmt, can_id, can_dlc, data)
+# def build_can_frame(can_id, data):
+#     can_dlc = len(data)
+#     data = data.ljust(8, b'\x00')
+#     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
 
 
-def dissect_can_frame(frame):
-    can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
-    return (can_id, can_dlc, data[:can_dlc])
+# def dissect_can_frame(frame):
+#     can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
+#     return (can_id, can_dlc, data[:can_dlc])
 
 
 if __name__ == "__main__":
@@ -27,23 +26,30 @@ if __name__ == "__main__":
     # 2. Call appropriate action
     # 3. Generate output cmd, file, ...
 
+    can_handler = Can_driver(can_interface)
+    can_handler.activate_socket()
+
+    for i in range(5):
+        can_handler.wait_for_one_msg()
+
+
     # create a raw socket and bind it to the given CAN interface
-    s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-    s.bind((can_interface,))
-
-    while True:
-        cf, addr = s.recvfrom(16)
-
-        print('Received: can_id=%x, can_dlc=%x, data=%s' % dissect_can_frame(cf))
-
-        try:
-            s.send(cf)
-        except socket.error:
-            print('Error sending CAN frame')
-
-        try:
-            s.send(build_can_frame(0x01, b'\x01\x02\x03'))
-        except socket.error:
-            print('Error sending CAN frame')
+    # s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+    # s.bind((can_interface,))
+    #
+    # while True:
+    #     cf, addr = s.recvfrom(16)
+    #
+    #     print('Received: can_id=%x, can_dlc=%x, data=%s' % dissect_can_frame(cf))
+    #
+    #     try:
+    #         s.send(cf)
+    #     except socket.error:
+    #         print('Error sending CAN frame')
+    #
+    #     try:
+    #         s.send(build_can_frame(0x01, b'\x01\x02\x03'))
+    #     except socket.error:
+    #         print('Error sending CAN frame')
 
 print("Done")
