@@ -3,7 +3,8 @@ import socket
 import struct
 import hexdump
 
-from cansend.can_msg import CanMsg
+#from cansend.can_msg import CanMsg
+from can_msg import CanMsg
 
 """
 Format string fmt. for conversion between C struct types and python representation
@@ -28,7 +29,7 @@ class Can_driver:
         # Do initialization of Socket here ?
         self.can_socket = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
         self.can_interface = interface_name
-        self.msg = CanMsg(0, 0, [])
+        self.msg = CanMsg()
 
     def activate_socket(self):
         """
@@ -45,15 +46,15 @@ class Can_driver:
         # TODO: check this behaviour
         self.can_socket.close()
 
-    @staticmethod
-    def dissect_can_frame(frame):
-        """
-        Return python tuple which extracts C struct
-        :return:
-        """
-        can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
-        print('DATA hexdump: ', hexdump.dump(data[:can_dlc], sep=" "))
-        return can_id, can_dlc, data[:can_dlc]
+    # @staticmethod
+    # def dissect_can_frame(frame):
+    #     """
+    #     Return python tuple which extracts C struct
+    #     :return:
+    #     """
+    #     can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
+    #     print('DATA hexdump: ', hexdump.dump(data[:can_dlc], sep=" "))
+    #     return can_id, can_dlc, data[:can_dlc]
 
     def parse_can_frame(self, frame):
         """
@@ -62,14 +63,11 @@ class Can_driver:
         :return: CanMsg python class
         """
         can_id, can_dlc, data = struct.unpack(can_frame_fmt, frame)
-        self.msg.id = can_id
+        self.msg.id = (can_id & 0x00FFFFFF) >> 8            # Separate 1st byte (priority) and last byte (source_addr)
+        self.msg.source_addr = can_id & 0x000000FF          # Mask out source address
         self.msg.dlc = can_dlc
-        # Get list of bytes from binary string
-        #data_str = hexdump.dump(data[:can_dlc], sep=" ")
-        #data_str = data_str.strip()
         self.msg.data = data[:can_dlc]
         print('Received msg: ' + self.msg.to_string())
-        #return can_id, can_dlc, data[:can_dlc]
         return self.msg
 
     def wait_for_one_msg(self):
@@ -79,7 +77,6 @@ class Can_driver:
         """
         cf, addr = self.can_socket.recvfrom(16)
         self.parse_can_frame(cf)
-        #print('Received: can_id=%x, can_dlc=%x, data=%s' % self.dissect_can_frame(cf))
         return self.msg
 
     def wait_for_multi_msg(self):
@@ -88,12 +85,26 @@ class Can_driver:
         :return: list of can messages
         """
 
+    # def build_can_frame(can_id, data):
+    #     can_dlc = len(data)
+    #     data = data.ljust(8, b'\x00')
+    #     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
+
     def send_one_msg(self, can_msg):
         """
         Send one can message
         :param can_msg: can message to send
         :return: True if msg was sent successfully
         """
+        msg_id_to_send = can_msg.get_id_to_send(0x18)
+
+        try:
+            print('sending msg_id: ', msg_id_to_send)
+            print('sending data: ', can_msg.data)
+            self.can_socket.send(msg_id_to_send, can_msg.data)
+            #s.send(build_can_frame(0x01, b'\x01\x02\x03'))
+        except socket.error:
+            print('Error sending CAN frame')
 
     def send_multi_msg(self, can_msg_list):
         """
