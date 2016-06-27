@@ -27,5 +27,10 @@ def parse_cmd_params(parameters):
     # parser.add_argument("max_nmb_msgs", type=int, help="maximum number of messages to receive")
     # args = parser.parse_args()
 
+    # TODO: try to parse parameter
     for param in parameters[1:]:
         print('Param: ', param)
+        # TODO: if error or unknown param then print help
+
+def printHelp():
+    pass
