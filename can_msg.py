@@ -1,3 +1,8 @@
+
+import struct
+
+can_frame_fmt = "<IB3x8s"
+
 class CanMsg:
     """
     Definition of CAN message
@@ -11,7 +16,7 @@ class CanMsg:
         self.id = msg_id
         self.source_addr = source_addr
         self.dlc = msg_dlc
-        self.data = [0xFF] * 8  # Raw binary representation #TODO: how to build raw data
+        #self.data = [0xFF] * 8  # Raw binary representation #TODO: how to build raw data
         self.data = bytes(msg_data[:msg_dlc])
 
     def to_string(self):
@@ -33,11 +38,13 @@ class CanMsg:
         id_to_send = (id_to_send << 8) | self.source_addr
         return id_to_send.to_bytes(2, byteorder='little')
 
-    # def get_bin_data(self):
-    #     """
-    #     Return binary representation of data
-    #     :return:
-    #     """
-    #     # TODO: ... get bin data as Python bin string ...
-    #     bin_data = bytes(self.data)
-    #     return bin_data
+    def get_binary_can_frame(self):
+        """
+        Return binary representation of whole CAN frame (to be sent into SocketCan)
+        :return:
+        """
+        # TODO: msg ID + data as bin data ...
+        #data = self.data.ljust(8, b'\x00')
+        bin_can_frame = struct.pack(can_frame_fmt, self.id, self.dlc, self.data)
+        print('BINARY CAN FRAME: ', bin_can_frame)
+        return bin_can_frame

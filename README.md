@@ -4,14 +4,12 @@ canSendPy
 CAN-bus simulation command line tool
 --------------------
 
-*This is just initial commit*
-*No useful functionality yet*
+Python3.5+ cmd tool for Linux to simulate specific can-bus behaviors as specified in J1939.
 
-Python3 cmd tool for Linux to simulate specific can-bus behaviors as specified in J1939.
-
-Requires
+Requirement
 - Working Socket can interface
-- HW to communicate on can-bus
+- HW to communicate on can-bus (or virtual can interface)
+- python-can module (sudo python3.5 -m pip install python-can)
 
 
 *Functionality*

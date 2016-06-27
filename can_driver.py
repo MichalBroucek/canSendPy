@@ -1,7 +1,6 @@
 
 import socket
 import struct
-import hexdump
 
 #from cansend.can_msg import CanMsg
 from can_msg import CanMsg
@@ -90,18 +89,18 @@ class Can_driver:
     #     data = data.ljust(8, b'\x00')
     #     return struct.pack(can_frame_fmt, can_id, can_dlc, data)
 
+
     def send_one_msg(self, can_msg):
         """
         Send one can message
         :param can_msg: can message to send
         :return: True if msg was sent successfully
         """
-        msg_id_to_send = can_msg.get_id_to_send(0x18)
+        #msg_id_to_send = can_msg.get_id_to_send(0x18)
+        binary_can_frame = can_msg.get_binary_can_frame()
 
         try:
-            print('sending msg_id: ', msg_id_to_send)
-            print('sending data: ', can_msg.data)
-            self.can_socket.send(msg_id_to_send, can_msg.data)
+            self.can_socket.send(binary_can_frame)
             #s.send(build_can_frame(0x01, b'\x01\x02\x03'))
         except socket.error:
             print('Error sending CAN frame')

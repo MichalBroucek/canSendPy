@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
+
+# TODO: convert into can python native implementation!
 
 from can_msg import CanMsg
 #from cansend.can_driver import Can_driver
