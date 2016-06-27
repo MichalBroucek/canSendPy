@@ -2,6 +2,8 @@
 import can
 import time
 
+#TODO: Just example of functionality ...
+
 can_interface = 'vcan0'
 bus = can.interface.Bus(can_interface, bustype='socketcan_native')
 
@@ -32,4 +34,4 @@ def producer(id):
     # Issue #3: Need to keep running to ensure the writing threads stay alive. ?
     time.sleep(1)
 
-producer(10)
+#producer(10)
