@@ -1,5 +1,6 @@
 __author__ = 'brouk'
 
+import can
 
 help_str = """
 'canSend.py' - cmd tool to simulate J1939 can-bus processes
@@ -10,6 +11,7 @@ Actions:
   -l --list                                                         Print list of connected devices with information about them.
                                                                       Doesn't work on Linux!
   -s --send_one_message [msgId] [byte1] [byte2] ... [byte8]         Send one specific CAN message with 8 bytes of data.
+  -S --send_message_multi [nmb_msg] [delay] [msgId] [byte1] [byte2] ... [byte8]   Send the same CAN message with 8 bytes of data multiple times.
   -f --send_file_messages [filename]                                Send messages defined in the text file. Format of file is:
                                                                       18fef100 21 21 21 21 21 21 21 21
                                                                       cf00400 22 22 22 22 22 22 22 22
@@ -37,12 +39,13 @@ class Param:
     """
     Class to hold parameters from command line
     """
-
     def __init__(self):
-        self.function = None
+        self.action = None
         self.timeout = None
         self.max_msg = None
+        self.msg = None
 
+# Helper functions to parse cmd line arguments parametrs
 
 def parse_cmd_params(parameters):
     """
@@ -62,11 +65,15 @@ def parse_cmd_params(parameters):
         print_help()
         return None
 
-    # TODO: try to parse parameter(s)
     if parameters[1] == '--list' or parameters[1] == '-l':
         print('List of can interfaces\nDoesn\'t work on Linux')
     elif parameters[1] == '--send_one_message' or parameters[1] == '-s':
-        print('Sending one message')
+        print('- Sending one message -')
+        # todo: parse rest of parameters ...
+        parseOneMsgParam(parameters[1:])
+    elif parameters[1] == '--' or parameters[1] == '-S':
+        print('- Sending multiple times one message with specific delay -')
+        # todo: ...
     elif parameters[1] == '--send_file_messages filename' or parameters[1] == '-f':
         print('send_file_messages filename')
     elif parameters[1] == '--send_default_messages' or parameters[1] == '-d':
@@ -81,19 +88,100 @@ def parse_cmd_params(parameters):
         print('addr_claim_addr_used')
     elif parameters[1] == '--addr_claim_addr_used_multi' or parameters[1] == '-aU':
         print('addr_claim_addr_used_multi')
-    # TODO: ...
+    elif parameters[1] == '--new_device_addr_used_multi' or parameters[1] == '-nU':
+        print('new_device_addr_used_multi')
+    elif parameters[1] == '--vin_code_response' or parameters[1] == '-v':
+        print('vin_code_response')
+    elif parameters[1] == '--vin_code_response_multi' or parameters[1] == '-V':
+        print('vin_code_response_multi')
     else:
-        print('Unknown parameter(s)\n')
+        print('Unknown action\n')
         print_help()
-
-# Actions:
-#   -nU --new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
-#                                                                       Wait [max_timeout] for response(s). Generate [max_responses] Address Collisions
-#   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
-#   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
-#   -h --help                                                         Print this help
-
 
 
 def print_help():
     print(help_str)
+
+
+def get_msg_from_argv_list(argv_list):
+    """
+    Get can message from hex string msgId and list of individual bytes as strings
+    :param argv: [msgId Byte1 Byte2 Byte3 Byte4 Byte5 Byte6 Byte7 Byte8]
+    :return: can.Message
+    """
+    if len(argv_list) != 9:
+        print('Wrong number of parameters for building can Message from msgId and list of string bytes!')
+        print_help()
+        return None
+
+    # msgId_str = '0x18FEF101'
+    # data_str = ['01', '02', '03', '04', '05', '06', '07', '08']
+
+    #msgId_int = int(msgId_str, 0)
+    msgId_int = int(argv_list[0], 0)
+
+    #data_list_int = [int(x, 16) for x in data_str]
+    data_list_int = [int(x, 16) for x in argv_list[1:]]
+
+    # todo: debug ...
+    print('param msg: {0}   {1} {2} {3} {4} {5} {6} {7} {8}'.format(hex(msgId_int), hex(data_list_int[0]), hex(data_list_int[1]), hex(data_list_int[2]), hex(data_list_int[3]), hex(data_list_int[4]), hex(data_list_int[5]), hex(data_list_int[6]), hex(data_list_int[7]) ))
+
+    msg = can.Message(extended_id=True, arbitration_id=msgId_int, data=data_list_int)
+
+    return msg
+
+
+def get_msg_from_argvs(argvs):
+    """
+    Get can message from hex string msgId and hex bytes as one long string
+    :param argvs: [msgId Byte1Byte2Byte3Byte4Byte5Byte6Byte7Byte8]
+    :return: can.Message
+    """
+
+    print('ARGVS: ', argvs)
+
+    if len(argvs) != 2:
+        print('Wrong number of parameters for building can Message from msgId and string of bytes data!')
+        print_help()
+        return None
+
+    # msgId_str = '0x18FEF101'
+    # data_str = '0102030405060708'
+
+    msgId_int = int(argvs[0], 0)
+    data_list_int = bytearray(argvs[1].decode('hex'))
+
+    # todo: debug ...
+    print('param msg: {0}   {1} {2} {3} {4} {5} {6} {7} {8}'.format(hex(msgId_int), hex(data_list_int[0]), hex(data_list_int[1]), hex(data_list_int[2]), hex(data_list_int[3]), hex(data_list_int[4]), hex(data_list_int[5]), hex(data_list_int[6]), hex(data_list_int[7]) ))
+
+    msg = can.Message(extended_id=True, arbitration_id=msgId_int, data=data_list_int)
+    return msg
+
+
+def parseOneMsgParam(parameters):
+    """
+    Parse cmd arguments for send_one_message
+    :param parameters:
+    :return:
+    """
+    if len(parameters) != 10:
+        print('Wrong number of parameters for sending one can message')
+        print_help()
+        return None
+
+    # if len(parameters) != 3:
+    #     print('Wrong number of parameters for sending one can message')
+    #     print_help()
+    #     return None
+
+    param = Param()
+    # todo: ... data msg
+    param.action = parameters[0]
+    param.msg = get_msg_from_argv_list(parameters[1:])
+    #param.msg = get_msg_from_argvs(parameters[1:])
+
+    print('Action: \'{0}\' called'.format(param.action))
+    print('Message: {0}'.format(param.msg))
+
+
+
