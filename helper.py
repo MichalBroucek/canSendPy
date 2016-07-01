@@ -42,7 +42,8 @@ class Param:
     def __init__(self):
         self.action = None
         self.timeout = None
-        self.max_msg = None
+        self.nmb_msg = None
+        self.delay = None
         self.msg = None
 
 # Helper functions to parse cmd line arguments parametrs
@@ -65,15 +66,16 @@ def parse_cmd_params(parameters):
         print_help()
         return None
 
+    action_param = None
+
     if parameters[1] == '--list' or parameters[1] == '-l':
         print('List of can interfaces\nDoesn\'t work on Linux')
     elif parameters[1] == '--send_one_message' or parameters[1] == '-s':
         print('- Sending one message -')
-        # todo: parse rest of parameters ...
-        parseOneMsgParam(parameters[1:])
-    elif parameters[1] == '--' or parameters[1] == '-S':
+        action_param = parse_one_msg_param(parameters[1:])
+    elif parameters[1] == '--send_message_multi' or parameters[1] == '-S':
         print('- Sending multiple times one message with specific delay -')
-        # todo: ...
+        action_param = parse_multi_msg_param(parameters[1:])
     elif parameters[1] == '--send_file_messages filename' or parameters[1] == '-f':
         print('send_file_messages filename')
     elif parameters[1] == '--send_default_messages' or parameters[1] == '-d':
@@ -98,6 +100,8 @@ def parse_cmd_params(parameters):
         print('Unknown action\n')
         print_help()
 
+    return action_param
+
 
 def print_help():
     print(help_str)
@@ -114,20 +118,11 @@ def get_msg_from_argv_list(argv_list):
         print_help()
         return None
 
-    # msgId_str = '0x18FEF101'
-    # data_str = ['01', '02', '03', '04', '05', '06', '07', '08']
-
-    #msgId_int = int(msgId_str, 0)
-    msgId_int = int(argv_list[0], 0)
-
-    #data_list_int = [int(x, 16) for x in data_str]
+    msgid_int = int(argv_list[0], 0)
     data_list_int = [int(x, 16) for x in argv_list[1:]]
 
-    # todo: debug ...
-    print('param msg: {0}   {1} {2} {3} {4} {5} {6} {7} {8}'.format(hex(msgId_int), hex(data_list_int[0]), hex(data_list_int[1]), hex(data_list_int[2]), hex(data_list_int[3]), hex(data_list_int[4]), hex(data_list_int[5]), hex(data_list_int[6]), hex(data_list_int[7]) ))
-
-    msg = can.Message(extended_id=True, arbitration_id=msgId_int, data=data_list_int)
-
+    msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
+    #print(msg)
     return msg
 
 
@@ -137,51 +132,51 @@ def get_msg_from_argvs(argvs):
     :param argvs: [msgId Byte1Byte2Byte3Byte4Byte5Byte6Byte7Byte8]
     :return: can.Message
     """
-
-    print('ARGVS: ', argvs)
-
     if len(argvs) != 2:
         print('Wrong number of parameters for building can Message from msgId and string of bytes data!')
         print_help()
         return None
 
-    # msgId_str = '0x18FEF101'
-    # data_str = '0102030405060708'
-
-    msgId_int = int(argvs[0], 0)
+    msgid_int = int(argvs[0], 0)
     data_list_int = bytearray(argvs[1].decode('hex'))
-
-    # todo: debug ...
-    print('param msg: {0}   {1} {2} {3} {4} {5} {6} {7} {8}'.format(hex(msgId_int), hex(data_list_int[0]), hex(data_list_int[1]), hex(data_list_int[2]), hex(data_list_int[3]), hex(data_list_int[4]), hex(data_list_int[5]), hex(data_list_int[6]), hex(data_list_int[7]) ))
-
-    msg = can.Message(extended_id=True, arbitration_id=msgId_int, data=data_list_int)
+    msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
+    #print(msg)
     return msg
 
 
-def parseOneMsgParam(parameters):
+def parse_one_msg_param(parameters):
     """
     Parse cmd arguments for send_one_message
-    :param parameters:
-    :return:
+    :param list: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
+    :return: Param()
     """
     if len(parameters) != 10:
         print('Wrong number of parameters for sending one can message')
         print_help()
         return None
 
-    # if len(parameters) != 3:
-    #     print('Wrong number of parameters for sending one can message')
-    #     print_help()
-    #     return None
-
     param = Param()
-    # todo: ... data msg
     param.action = parameters[0]
     param.msg = get_msg_from_argv_list(parameters[1:])
     #param.msg = get_msg_from_argvs(parameters[1:])
-
-    print('Action: \'{0}\' called'.format(param.action))
-    print('Message: {0}'.format(param.msg))
+    return param
 
 
+def parse_multi_msg_param(parameters):
+    """
+    Parse cmd arguments for send_message_multi
+    :param list: [action nmb_msgs delay_ms msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
+    :return: Param()
+    """
+    if len(parameters) != 12:
+        print('Wrong number of parameters for sending one can message')
+        print_help()
+        return None
+
+    param = Param()
+    param.action = parameters[0]
+    param.nmb_msg = parameters[1]
+    param.delay = parameters[2]
+    param.msg = get_msg_from_argv_list(parameters[3:])
+    return param
 
