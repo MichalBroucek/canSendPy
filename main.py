@@ -6,6 +6,7 @@ import sys
 #import can
 from can_driver import Can_driver
 import helper
+import can_simulator
 
 can_interface = 'vcan0'
 
@@ -24,5 +25,8 @@ if __name__ == "__main__":
 
     # 1. todo: Needs to complete all parameters
     params = helper.parse_cmd_params(sys.argv)
+    simulator = can_simulator.CanSimulator(params, can_interface)
+    simulator.run_action()
+
 
 print("Done")

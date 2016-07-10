@@ -34,6 +34,21 @@ Examples:
     canSend.py send_file_messages ~/workspace_sandbox/canSend/Debug/CanData.txt
 """
 
+# Action constants
+LIST = ["-l", "--list"]
+SEND_ONE_MSG = ["-s", "--send_one_message"]
+SEND_MSG_MULTI = ["-S", "--send_message_multi"]
+SEND_FILE_MSG = ["-f", "--send_file_messages"]
+SEND_DEFAULT = ["-d", "--send_default_messages"]
+RECEIVE_ONE_MSG = ["-r", "--receive_one_message"]
+RECEIVE_MULTI_MSG = ["-R", "--receive_messages"]
+ADDR_CLAIM_NO_RESPONSE = ["-an", "--addr_claim_no_response"]
+ADDR_CLAIM_ADDR_USED = ["-au", "--addr_claim_addr_used"]
+ADDR_CLAIM_ADDR_USED_MULTI = ["-aU", "--addr_claim_addr_used_multi"]
+NEW_DEV_ADDR_USED_MULTI = ["-nU", "--new_device_addr_used_multi"]
+VIN_CODE_RESPONSE = ["-v", "--vin_code_response"]
+VIN_CODE_RESPONSE_MULTI = ["-V", "--vin_code_response_multi"]
+HELP = ["-h", "--help"]
 
 class Param:
     """
@@ -68,33 +83,33 @@ def parse_cmd_params(parameters):
 
     action_param = None
 
-    if parameters[1] == '--list' or parameters[1] == '-l':
+    if parameters[1] in LIST:
         print('List of can interfaces\nDoesn\'t work on Linux')
-    elif parameters[1] == '--send_one_message' or parameters[1] == '-s':
+    elif parameters[1] in SEND_ONE_MSG:
         print('- Sending one message -')
         action_param = parse_one_msg_param(parameters[1:])
-    elif parameters[1] == '--send_message_multi' or parameters[1] == '-S':
+    elif parameters[1] in SEND_MSG_MULTI:
         print('- Sending multiple times one message with specific delay -')
         action_param = parse_multi_msg_param(parameters[1:])
-    elif parameters[1] == '--send_file_messages filename' or parameters[1] == '-f':
+    elif parameters[1] in SEND_FILE_MSG:
         print('send_file_messages filename')
-    elif parameters[1] == '--send_default_messages' or parameters[1] == '-d':
+    elif parameters[1] in SEND_DEFAULT:
         print('send_default_messages')
-    elif parameters[1] == '--receive_one_message' or parameters[1] == '-r':
+    elif parameters[1] in RECEIVE_ONE_MSG:
         print('receive_one_message')
-    elif parameters[1] == '--receive_messages' or parameters[1] == '-R':
+    elif parameters[1] in RECEIVE_MULTI_MSG:
         print('receive_messages')
-    elif parameters[1] == '--addr_claim_no_response' or parameters[1] == '-an':
+    elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
         print('addr_claim_no_response')
-    elif parameters[1] == '--addr_claim_addr_used' or parameters[1] == '-au':
+    elif parameters[1] in ADDR_CLAIM_ADDR_USED:
         print('addr_claim_addr_used')
-    elif parameters[1] == '--addr_claim_addr_used_multi' or parameters[1] == '-aU':
+    elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
         print('addr_claim_addr_used_multi')
-    elif parameters[1] == '--new_device_addr_used_multi' or parameters[1] == '-nU':
+    elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
         print('new_device_addr_used_multi')
-    elif parameters[1] == '--vin_code_response' or parameters[1] == '-v':
+    elif parameters[1] in VIN_CODE_RESPONSE:
         print('vin_code_response')
-    elif parameters[1] == '--vin_code_response_multi' or parameters[1] == '-V':
+    elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
         print('vin_code_response_multi')
     else:
         print('Unknown action\n')
