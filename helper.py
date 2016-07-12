@@ -57,7 +57,7 @@ class Param:
     def __init__(self):
         self.action = None
         self.timeout = None
-        self.nmb_msg = None
+        self.nmb_msgs = None
         self.delay = None
         self.msg = None
 
@@ -79,12 +79,13 @@ def parse_cmd_params(parameters):
     if len(parameters) == 1:
         print('Wrong number of parameters!')
         print_help()
-        return None
+        exit()
 
     action_param = None
 
     if parameters[1] in LIST:
-        print('List of can interfaces\nDoesn\'t work on Linux')
+        print('Active interface - details')
+        action_param = parse_interface_info_param(parameters[1:])
     elif parameters[1] in SEND_ONE_MSG:
         print('- Sending one message -')
         action_param = parse_one_msg_param(parameters[1:])
@@ -114,6 +115,10 @@ def parse_cmd_params(parameters):
     else:
         print('Unknown action\n')
         print_help()
+
+    if action_param is None:
+        print('Wrong parameter(s) or this functionality is not implemented yet.')
+        exit()
 
     return action_param
 
@@ -190,8 +195,48 @@ def parse_multi_msg_param(parameters):
 
     param = Param()
     param.action = parameters[0]
-    param.nmb_msg = parameters[1]
-    param.delay = parameters[2]
+    param.nmb_msgs = str_to_digit(parameters[1])
+    param.delay = str_to_digit(parameters[2])
     param.msg = get_msg_from_argv_list(parameters[3:])
     return param
 
+
+def parse_interface_info_param(parameters):
+    """
+    Parse parameter for interface info
+    :param parameters:
+    :return:
+    """
+    if len(parameters) != 1:
+        print('Wrong number of parameters for listing interface info!')
+        print_help()
+        return None
+
+    param = Param()
+    param.action = parameters[0]
+    return param
+
+
+def str_to_digit(positive_int_str):
+    """
+    Get positive integer from string
+    :param positive_int_str:
+    :return: int
+    """
+    if positive_int_str.isdigit():
+        return int(positive_int_str)
+    else:
+        print('Error: Value \'{0}\' is not string representation of positive integer!\n'.format(positive_int_str))
+        return None
+
+
+def str_to_float(float_str):
+    """
+    Get float number from string
+    :param float_str:
+    :return: float
+    """
+    try:
+        return float(float_str)
+    except ValueError:
+        print('Error: Value \'{0}\' is not string representation of float!\n'.format(float_str))

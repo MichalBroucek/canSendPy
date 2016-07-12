@@ -1,6 +1,9 @@
 
+import time
+
 import helper
 import can_driver
+
 
 class CanSimulator:
     """
@@ -29,13 +32,16 @@ class CanSimulator:
         :param param:
         :return:
         """
+        print('Param action: {0}'.format(self.param.action))
         if self.param.action in helper.LIST:
-            print('CanSimulator: print out list of devices ? - Not implemented yet!')
+            print('CanSimulator: print out list of devices ? - Not implemented yet!\n')
+            print(self.__list())
         elif self.param.action in helper.SEND_ONE_MSG:
             print('CanSimulator: Sending one message ...')
-            self.__send_one_msg(self.param)
+            self.__send_one_msg(self.param.msg)
         elif self.param.action in helper.SEND_MSG_MULTI:
             print('CanSimulator: Sending multi messages ...')
+            self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
         elif self.param.action in helper.SEND_FILE_MSG:
             print('CanSimulator: Sending messages from file ...')
         elif self.param.action in helper.SEND_DEFAULT:
@@ -45,13 +51,30 @@ class CanSimulator:
             print('Exit')
             return
 
-    def __send_one_msg(self, param):
+    def __list(self):
+        """
+        List parameters for can interface
+        :return:
+        """
+        return self.can_bus.bus.socket.__str__()
+
+    def __send_one_msg(self, msg_to_send):
         """
         Send one message action
         :param param:
         :return:
         """
-        # TODO: ...
-        # self.can_bus.send_one_msg()
+        self.can_bus.send_one_msg(msg_to_send)
         pass
+
+    def __send_multi_msg(self, nmb_msgs, delay_ms, msg_to_send):
+        """
+        Send the same message multiple times
+        :return:
+        """
+        delay_seconds = delay_ms / 1000.0
+        print('Delay between messages: {0} [seconds]'.format(delay_seconds))
+        for i in range(nmb_msgs):
+            self.can_bus.send_one_msg(msg_to_send)
+            time.sleep(delay_seconds)
 
