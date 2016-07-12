@@ -35,25 +35,27 @@ Examples:
 """
 
 # Action constants
-LIST = ["-l", "--list"]
-SEND_ONE_MSG = ["-s", "--send_one_message"]
-SEND_MSG_MULTI = ["-S", "--send_message_multi"]
-SEND_FILE_MSG = ["-f", "--send_file_messages"]
-SEND_DEFAULT = ["-d", "--send_default_messages"]
-RECEIVE_ONE_MSG = ["-r", "--receive_one_message"]
-RECEIVE_MULTI_MSG = ["-R", "--receive_messages"]
-ADDR_CLAIM_NO_RESPONSE = ["-an", "--addr_claim_no_response"]
-ADDR_CLAIM_ADDR_USED = ["-au", "--addr_claim_addr_used"]
-ADDR_CLAIM_ADDR_USED_MULTI = ["-aU", "--addr_claim_addr_used_multi"]
-NEW_DEV_ADDR_USED_MULTI = ["-nU", "--new_device_addr_used_multi"]
-VIN_CODE_RESPONSE = ["-v", "--vin_code_response"]
-VIN_CODE_RESPONSE_MULTI = ["-V", "--vin_code_response_multi"]
-HELP = ["-h", "--help"]
+LIST = ("-l", "--list")
+SEND_ONE_MSG = ("-s", "--send_one_message")
+SEND_MSG_MULTI = ("-S", "--send_message_multi")
+SEND_FILE_MSG = ("-f", "--send_file_messages")
+SEND_DEFAULT = ("-d", "--send_default_messages")
+RECEIVE_ONE_MSG = ("-r", "--receive_one_message")
+RECEIVE_MULTI_MSG = ("-R", "--receive_messages")
+ADDR_CLAIM_NO_RESPONSE = ("-an", "--addr_claim_no_response")
+ADDR_CLAIM_ADDR_USED = ("-au", "--addr_claim_addr_used")
+ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used_multi")
+NEW_DEV_ADDR_USED_MULTI = ("-nU", "--new_device_addr_used_multi")
+VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
+VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
+HELP = ("-h", "--help")
+
 
 class Param:
     """
-    Class to hold parameters from command line
+    Class to parse and hold parameters from command line
     """
+
     def __init__(self):
         self.action = None
         self.timeout = None
@@ -61,182 +63,168 @@ class Param:
         self.delay = None
         self.msg = None
 
-# Helper functions to parse cmd line arguments parametrs
+    def parse_cmd_params(self, parameters):
+        """
+        Parse command line parameters
+        :return: Param object generated from cmd arguments
+        """
+        if len(parameters) == 1:
+            print('Wrong number of parameters!')
+            self.print_help()
+            exit()
 
-def parse_cmd_params(parameters):
-    """
-    Parse command line parameters
-    :return: Param object generated from cmd arguments
-    """
-    # TODO: This is nice but doesn't fit this purpose
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("action",
-    #                     help="Action to be performed (wait_for_one_msg, wait_for_multi_msgs, send_one_msg, semd_default_msgs, send_file_msgs, ...)")
-    # parser.add_argument("max_timeout", type=int, help="Maximum timeout for waiting on can-bus message(s)")
-    # parser.add_argument("max_nmb_msgs", type=int, help="maximum number of messages to receive")
-    # args = parser.parse_args()
+        action_param = None
 
-    if len(parameters) == 1:
-        print('Wrong number of parameters!')
-        print_help()
-        exit()
+        if parameters[1] in LIST:
+            print('Active interface - details')
+            action_param = self.parse_interface_info_param(parameters[1:])
+        elif parameters[1] in SEND_ONE_MSG:
+            print('- Sending one message -')
+            action_param = self.parse_one_msg_param(parameters[1:])
+        elif parameters[1] in SEND_MSG_MULTI:
+            print('- Sending multiple times one message with specific delay -')
+            action_param = self.parse_multi_msg_param(parameters[1:])
+        elif parameters[1] in SEND_FILE_MSG:
+            print('send_file_messages filename')
+        elif parameters[1] in SEND_DEFAULT:
+            print('send_default_messages')
+        elif parameters[1] in RECEIVE_ONE_MSG:
+            print('receive_one_message')
+        elif parameters[1] in RECEIVE_MULTI_MSG:
+            print('receive_messages')
+        elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
+            print('addr_claim_no_response')
+        elif parameters[1] in ADDR_CLAIM_ADDR_USED:
+            print('addr_claim_addr_used')
+        elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
+            print('addr_claim_addr_used_multi')
+        elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
+            print('new_device_addr_used_multi')
+        elif parameters[1] in VIN_CODE_RESPONSE:
+            print('vin_code_response')
+        elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
+            print('vin_code_response_multi')
+        else:
+            print('Unknown action\n')
+            self.print_help()
 
-    action_param = None
+        if action_param is None:
+            print('Wrong parameter(s) or this functionality is not implemented yet.')
+            exit()
 
-    if parameters[1] in LIST:
-        print('Active interface - details')
-        action_param = parse_interface_info_param(parameters[1:])
-    elif parameters[1] in SEND_ONE_MSG:
-        print('- Sending one message -')
-        action_param = parse_one_msg_param(parameters[1:])
-    elif parameters[1] in SEND_MSG_MULTI:
-        print('- Sending multiple times one message with specific delay -')
-        action_param = parse_multi_msg_param(parameters[1:])
-    elif parameters[1] in SEND_FILE_MSG:
-        print('send_file_messages filename')
-    elif parameters[1] in SEND_DEFAULT:
-        print('send_default_messages')
-    elif parameters[1] in RECEIVE_ONE_MSG:
-        print('receive_one_message')
-    elif parameters[1] in RECEIVE_MULTI_MSG:
-        print('receive_messages')
-    elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
-        print('addr_claim_no_response')
-    elif parameters[1] in ADDR_CLAIM_ADDR_USED:
-        print('addr_claim_addr_used')
-    elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
-        print('addr_claim_addr_used_multi')
-    elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
-        print('new_device_addr_used_multi')
-    elif parameters[1] in VIN_CODE_RESPONSE:
-        print('vin_code_response')
-    elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
-        print('vin_code_response_multi')
-    else:
-        print('Unknown action\n')
-        print_help()
+        return action_param
 
-    if action_param is None:
-        print('Wrong parameter(s) or this functionality is not implemented yet.')
-        exit()
+    @staticmethod
+    def print_help():
+        print(help_str)
 
-    return action_param
+    def get_msg_from_argv_list(self, argv_list):
+        """
+        Get can message from hex string msgId and list of individual bytes as strings
+        :param argv_list: [msgId Byte1 Byte2 Byte3 Byte4 Byte5 Byte6 Byte7 Byte8]
+        :return: can.Message
+        """
+        if len(argv_list) != 9:
+            print('Wrong number of parameters for building can Message from msgId and list of string bytes!')
+            self.print_help()
+            return None
 
+        msgid_int = int(argv_list[0], 0)
+        data_list_int = [int(x, 16) for x in argv_list[1:]]
 
-def print_help():
-    print(help_str)
+        msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
+        # print(msg)
+        return msg
 
+    def get_msg_from_argvs(self, argvs):
+        """
+        Get can message from hex string msgId and hex bytes as one long string
+        :param argvs: [msgId Byte1Byte2Byte3Byte4Byte5Byte6Byte7Byte8]
+        :return: can.Message
+        """
+        if len(argvs) != 2:
+            print('Wrong number of parameters for building can Message from msgId and string of bytes data!')
+            self.print_help()
+            return None
 
-def get_msg_from_argv_list(argv_list):
-    """
-    Get can message from hex string msgId and list of individual bytes as strings
-    :param argv: [msgId Byte1 Byte2 Byte3 Byte4 Byte5 Byte6 Byte7 Byte8]
-    :return: can.Message
-    """
-    if len(argv_list) != 9:
-        print('Wrong number of parameters for building can Message from msgId and list of string bytes!')
-        print_help()
-        return None
+        msgid_int = int(argvs[0], 0)
+        data_list_int = bytearray(argvs[1].decode('hex'))
+        msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
+        # print(msg)
+        return msg
 
-    msgid_int = int(argv_list[0], 0)
-    data_list_int = [int(x, 16) for x in argv_list[1:]]
+    def parse_one_msg_param(self, parameters):
+        """
+        Parse cmd arguments for send_one_message
+        :param parameters:
+        :param list: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
+        :return: Param()
+        """
+        if len(parameters) != 10:
+            print('Wrong number of parameters for sending one can message')
+            self.print_help()
+            return None
 
-    msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
-    #print(msg)
-    return msg
+        param = Param()
+        param.action = parameters[0]
+        param.msg = self.get_msg_from_argv_list(parameters[1:])
+        # param.msg = self.get_msg_from_argvs(parameters[1:])
+        return param
 
+    def parse_multi_msg_param(self, parameters):
+        """
+        Parse cmd arguments for send_message_multi
+        :param list: [action nmb_msgs delay_ms msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
+        :return: Param()
+        """
+        if len(parameters) != 12:
+            print('Wrong number of parameters for sending one can message')
+            self.print_help()
+            return None
 
-def get_msg_from_argvs(argvs):
-    """
-    Get can message from hex string msgId and hex bytes as one long string
-    :param argvs: [msgId Byte1Byte2Byte3Byte4Byte5Byte6Byte7Byte8]
-    :return: can.Message
-    """
-    if len(argvs) != 2:
-        print('Wrong number of parameters for building can Message from msgId and string of bytes data!')
-        print_help()
-        return None
+        param = Param()
+        param.action = parameters[0]
+        param.nmb_msgs = self.__str_to_digit(parameters[1])
+        param.delay = self.__str_to_digit(parameters[2])
+        param.msg = self.get_msg_from_argv_list(parameters[3:])
+        return param
 
-    msgid_int = int(argvs[0], 0)
-    data_list_int = bytearray(argvs[1].decode('hex'))
-    msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
-    #print(msg)
-    return msg
+    def parse_interface_info_param(self, parameters):
+        """
+        Parse parameter for interface info
+        :param parameters:
+        :return:
+        """
+        if len(parameters) != 1:
+            print('Wrong number of parameters for listing interface info!')
+            self.print_help()
+            return None
 
+        param = Param()
+        param.action = parameters[0]
+        return param
 
-def parse_one_msg_param(parameters):
-    """
-    Parse cmd arguments for send_one_message
-    :param list: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
-    :return: Param()
-    """
-    if len(parameters) != 10:
-        print('Wrong number of parameters for sending one can message')
-        print_help()
-        return None
+    @staticmethod
+    def __str_to_digit(positive_int_str):
+        """
+        Get positive integer from string
+        :param positive_int_str:
+        :return: int
+        """
+        if positive_int_str.isdigit():
+            return int(positive_int_str)
+        else:
+            print('Error: Value \'{0}\' is not string representation of positive integer!\n'.format(positive_int_str))
+            return None
 
-    param = Param()
-    param.action = parameters[0]
-    param.msg = get_msg_from_argv_list(parameters[1:])
-    #param.msg = get_msg_from_argvs(parameters[1:])
-    return param
-
-
-def parse_multi_msg_param(parameters):
-    """
-    Parse cmd arguments for send_message_multi
-    :param list: [action nmb_msgs delay_ms msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
-    :return: Param()
-    """
-    if len(parameters) != 12:
-        print('Wrong number of parameters for sending one can message')
-        print_help()
-        return None
-
-    param = Param()
-    param.action = parameters[0]
-    param.nmb_msgs = str_to_digit(parameters[1])
-    param.delay = str_to_digit(parameters[2])
-    param.msg = get_msg_from_argv_list(parameters[3:])
-    return param
-
-
-def parse_interface_info_param(parameters):
-    """
-    Parse parameter for interface info
-    :param parameters:
-    :return:
-    """
-    if len(parameters) != 1:
-        print('Wrong number of parameters for listing interface info!')
-        print_help()
-        return None
-
-    param = Param()
-    param.action = parameters[0]
-    return param
-
-
-def str_to_digit(positive_int_str):
-    """
-    Get positive integer from string
-    :param positive_int_str:
-    :return: int
-    """
-    if positive_int_str.isdigit():
-        return int(positive_int_str)
-    else:
-        print('Error: Value \'{0}\' is not string representation of positive integer!\n'.format(positive_int_str))
-        return None
-
-
-def str_to_float(float_str):
-    """
-    Get float number from string
-    :param float_str:
-    :return: float
-    """
-    try:
-        return float(float_str)
-    except ValueError:
-        print('Error: Value \'{0}\' is not string representation of float!\n'.format(float_str))
+    @staticmethod
+    def __str_to_float(float_str):
+        """
+        Get float number from string
+        :param float_str:
+        :return: float
+        """
+        try:
+            return float(float_str)
+        except ValueError:
+            print('Error: Value \'{0}\' is not string representation of float!\n'.format(float_str))

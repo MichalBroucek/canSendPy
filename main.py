@@ -23,10 +23,10 @@ if __name__ == "__main__":
     # 2. Call appropriate action
     # 3. Generate output cmd, file, ...
 
-    # 1. todo: Needs to complete all parameters
-    params = helper.parse_cmd_params(sys.argv)
-    simulator = can_simulator.CanSimulator(params, can_interface)
+    # 1. todo: Needs to complete all actions for all parameters
+    param = helper.Param()
+    simulator_parameters = param.parse_cmd_params(sys.argv)
+    simulator = can_simulator.CanSimulator(simulator_parameters, can_interface)
     simulator.run_action()
 
-
-print("Done")
+    print("Done")
