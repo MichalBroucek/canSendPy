@@ -1,5 +1,5 @@
 """
-Helper methods to work with files
+Helper methods to work with file(s)
 """
 
 
@@ -40,7 +40,7 @@ def read_messages_from_file(file_name):
 
             if is_delay_line(line):
                 msg_group.delay = get_delay_from_line(line)
-                file_lines.append(msg_group)
+                msg_group_list.append(msg_group)
                 msg_group.clean()
 
     return msg_group_list
@@ -68,7 +68,10 @@ def get_msg_from_line(line):
     :param line: which contains message definition
     :return: can.Message
     """
-    pass
+    msg_items = line.split(" ", 9)
+    #msg = can.Message(arbitration_id=0x18FEF102, data=[1, 2, 3, 4, 5, 6, 7, 8], extended_id=True)
+    # TODO: parse line as can.Message
+    # try .. except
 
 
 def get_delay_from_line(line):
@@ -77,4 +80,10 @@ def get_delay_from_line(line):
     :param line: which contains delay value in ms
     :return: delay
     """
-    pass
+    delay_str = line.split("delay", 1)[1]
+
+    try:
+        return int(delay_str.strip())
+    except ValueError:
+        print('Error: When parsing *.txt file delay line!')
+        return 0
