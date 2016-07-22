@@ -2,6 +2,33 @@ __author__ = 'brouk'
 
 import can
 
+# INTERFACE FOR WIN - SAME HAS TO BE IMPLEMENTED here
+# 	cout << "  list                                                        Print list of connected devices with information about them." << endl;
+# DONE 	cout << "  send_one_message msgId byte1 byte2 ... byte8                Send one specific CAN message with 8 bytes of data." << endl;
+# 	cout << "  send_file_messages fileName                                 Send messages defined in the text file. Format of file is:" << endl;
+# 	cout << "                                                                18fef100 21 21 21 21 21 21 21 21" << endl;
+# 	cout << "                                                                cf00400 22 22 22 22 22 22 22 22" << endl;
+# 	cout << "                                                                delay 700" << endl;
+# 	cout << "                                                                18fef100 31 31 31 31 31 31 31 31" << endl;
+#     cout << "                                                                delay 800" << endl;
+# DONE	cout << "  send_default_messages                                       Send default messages." << endl;
+# 	cout << "  receive_one_message    [max_timeout]                        Wait [ms] for one message for specific number of milliseconds." << endl;
+# 	cout << "  receive_messages       [max_timeout]                        Wait [ms] for all messages for specific number of milliseconds." << endl;
+# 	cout << "  addr_claim_no_response [max_timeout]                        Wait [ms] for 'Address claim message' send no response (address can be used)." << endl;
+# 	cout << "  addr_claim_addr_used   [max_timeout]                        Wait [ms] for 'Address claim message' send 'Address claimed' response (address can NOT be used)." << endl;
+# 	cout << "  addr_claim_addr_used_multi [max_timeout] [max_responses]    Wait max [ms] for 'Address claim' and response by [max_responses] nmb. of Addr. Claimed msgs." << endl;
+# 	cout << "  new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2." << endl;
+# 	cout << "                                                                Wait [max_timeout] for response(s)" << endl;
+# 	cout << "                                                                Generate [max_responses] Address Collisions" << endl;
+# 	cout << "  vin_code_response       [max_timeout]                       Wait for VIN code request and send VIN code as single message back." << endl;
+# 	cout << "  vin_code_response_multi [max_timeout]                       Wait for VIN code request and send VIN code as multi frame message back." << endl;
+# 	cout << "  help                                                        Print this help." << endl;
+# 	cout << "\nExamples:" << endl;
+# 	cout << "canSend.exe send_one_message 18FEF100 01 02 03 04 05 06 07 08" << endl;
+# 	cout << "canSend.exe send_file_messages c:\\workspace_sandbox\\canSend\\Debug\\CanData.txt" << endl;
+# }
+
+
 help_str = """
 'canSend.py' - cmd tool to simulate J1939 can-bus processes
 
@@ -62,6 +89,7 @@ class Param:
         self.nmb_msgs = None
         self.delay = None
         self.msg = None
+        self.file_name = None
 
     def parse_cmd_params(self, parameters):
         """
@@ -76,36 +104,33 @@ class Param:
         action_param = None
 
         if parameters[1] in LIST:
-            print('Active interface - details')
             action_param = self.parse_interface_info_param(parameters[1:])
         elif parameters[1] in SEND_ONE_MSG:
-            print('- Sending one message -')
             action_param = self.parse_one_msg_param(parameters[1:])
         elif parameters[1] in SEND_MSG_MULTI:
-            print('- Sending multiple times one message with specific delay -')
             action_param = self.parse_multi_msg_param(parameters[1:])
         elif parameters[1] in SEND_FILE_MSG:
-            print('send_file_messages filename')
+            action_param = self.parse_file_messages(parameters[1:])
         elif parameters[1] in SEND_DEFAULT:
-            print('send_default_messages')
+            action_param = self.parse_send_default_param(parameters[1:])
         elif parameters[1] in RECEIVE_ONE_MSG:
-            print('receive_one_message')
+            pass
         elif parameters[1] in RECEIVE_MULTI_MSG:
-            print('receive_messages')
+            pass
         elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
-            print('addr_claim_no_response')
+            pass
         elif parameters[1] in ADDR_CLAIM_ADDR_USED:
-            print('addr_claim_addr_used')
+            pass
         elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
-            print('addr_claim_addr_used_multi')
+            pass
         elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
-            print('new_device_addr_used_multi')
+            pass
         elif parameters[1] in VIN_CODE_RESPONSE:
-            print('vin_code_response')
+            pass
         elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
-            print('vin_code_response_multi')
+            pass
         else:
-            print('Unknown action\n')
+            print('Unknown action!\n')
             self.print_help()
 
         if action_param is None:
@@ -157,8 +182,8 @@ class Param:
         """
         Parse cmd arguments for send_one_message
         :param parameters:
-        :param list: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
-        :return: Param()
+        :param parameters: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
+        :return: Param() object
         """
         if len(parameters) != 10:
             print('Wrong number of parameters for sending one can message')
@@ -174,8 +199,8 @@ class Param:
     def parse_multi_msg_param(self, parameters):
         """
         Parse cmd arguments for send_message_multi
-        :param list: [action nmb_msgs delay_ms msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
-        :return: Param()
+        :param parameters:
+        :return: Param() object
         """
         if len(parameters) != 12:
             print('Wrong number of parameters for sending one can message')
@@ -193,10 +218,41 @@ class Param:
         """
         Parse parameter for interface info
         :param parameters:
-        :return:
+        :return: Param() object
         """
         if len(parameters) != 1:
             print('Wrong number of parameters for listing interface info!')
+            self.print_help()
+            return None
+
+        param = Param()
+        param.action = parameters[0]
+        return param
+
+    def parse_file_messages(self, parameters):
+        """
+        Parse parameters for sending messages from text file
+        :param parameters:
+        :return: Param() object
+        """
+        if len(parameters) != 2:
+            print('Wrong number of parameters for sending messages! from text file!')
+            self.print_help()
+            return None
+
+        param = Param()
+        param.action = parameters[0]
+        param.file_name = parameters[1]
+        return param
+
+    def parse_send_default_param(self, parameters):
+        """
+        Parse parameters for sending default messages
+        :param parameters:
+        :return: Param() object
+        """
+        if len(parameters) != 1:
+            print('Wrong number of parameters for sending default messages!')
             self.print_help()
             return None
 

@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 
-# !/usr/bin/env python3.5
+# TODO:
+# 1. print out message which is sent
+# 2. implement missing functionality - from original canSend (with different parameters ...)
+# 3. Add unit tests for this tool!
 
 import sys
 #import can
-from can_driver import Can_driver
+from candriver import CanDriver
 import helper
 import can_simulator
 
 can_interface = 'vcan0'
 
 if __name__ == "__main__":
-    print("--- cansend ---\n")
     # Example of usage
     # can_handler = Can_driver(can_interface)
     # msg = can.Message(arbitration_id=0x18FEF101, extended_id=True, data=([0x11] * 8))
     # can_handler.send_one_msg(msg)  # Sending 5 messages
     # can_handler.wait_for_one_msg()      # Receiving 5 messages
 
-    # TODO:
     # 1. Parse command line parameters
     # 2. Call appropriate action
     # 3. Generate output cmd, file, ...

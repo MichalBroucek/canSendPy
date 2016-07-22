@@ -1,7 +1,8 @@
 
 import can
 
-class Can_driver:
+
+class CanDriver:
     """
     Class to handle Socket can-bus interface
     - open Socket can interface

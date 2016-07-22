@@ -1,8 +1,9 @@
 
 import time
+import can
 
 import helper
-import can_driver
+import candriver
 
 
 class CanSimulator:
@@ -24,7 +25,7 @@ class CanSimulator:
     def __init__(self, cmd_parameters, can_interface):
         self.param = cmd_parameters
         self.interface = can_interface
-        self.can_bus = can_driver.Can_driver(self.interface)
+        self.can_bus = candriver.CanDriver(self.interface)
 
     def run_action(self):
         """
@@ -32,20 +33,21 @@ class CanSimulator:
         :param param:
         :return:
         """
-        print('Param action: {0}'.format(self.param.action))
         if self.param.action in helper.LIST:
             print('CanSimulator: print out list of devices ? - Not implemented yet!\n')
             print(self.__list())
         elif self.param.action in helper.SEND_ONE_MSG:
-            print('CanSimulator: Sending one message ...')
+            print('- Sending one message -')
             self.__send_one_msg(self.param.msg)
         elif self.param.action in helper.SEND_MSG_MULTI:
-            print('CanSimulator: Sending multi messages ...')
+            print('- Sending multiple times one message with specific delay -')
             self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
         elif self.param.action in helper.SEND_FILE_MSG:
-            print('CanSimulator: Sending messages from file ...')
+            print('- Sending one message -')
+            self.__send_file_messages(self.param.file_name)
         elif self.param.action in helper.SEND_DEFAULT:
-            print('CanSimulator: Sending default messages ...')
+            print('- Sending default messages -')
+            self.__send_default_messages()
         else:
             print('Unknown action')
             print('Exit')
@@ -54,27 +56,48 @@ class CanSimulator:
     def __list(self):
         """
         List parameters for can interface
-        :return:
         """
         return self.can_bus.bus.socket.__str__()
 
     def __send_one_msg(self, msg_to_send):
         """
         Send one message action
-        :param param:
-        :return:
+        :param msg_to_send can message to be sent
         """
         self.can_bus.send_one_msg(msg_to_send)
-        pass
+        print(msg_to_send)
 
     def __send_multi_msg(self, nmb_msgs, delay_ms, msg_to_send):
         """
         Send the same message multiple times
-        :return:
         """
         delay_seconds = delay_ms / 1000.0
         print('Delay between messages: {0} [seconds]'.format(delay_seconds))
         for i in range(nmb_msgs):
             self.can_bus.send_one_msg(msg_to_send)
+            print(msg_to_send)
             time.sleep(delay_seconds)
+
+    def __send_default_messages(self):
+        """
+        Sends default messages
+        """
+        msg1 = can.Message(arbitration_id=0x18FEF101, extended_id=True, data=([0, 0, 0x32, 0, 0, 0, 0, 0]))
+        msg2 = can.Message(arbitration_id=0x0CF00402, extended_id=True, data=([0, 0, 0xAA, 0, 0xAA, 0, 0, 0]))
+        messages = [msg1, msg2]
+
+        for msg in messages:
+            self.can_bus.send_one_msg(msg)
+            print(msg)
+            time.sleep(0.01)
+
+    def __send_file_messages(self, file_name):
+        """
+        Send messages specified in text file
+        :param file_name: text file where messages are specified
+        """
+        # TODO:
+        # Open file
+        # Read messages from file into the list of list MessageGroup (contains can.Message list and delay value)
+        # Send all list of list messages with proper delays
 
