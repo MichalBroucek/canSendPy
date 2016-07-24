@@ -2,8 +2,8 @@
 import time
 import can
 
-import helper
-import candriver
+from src import helper
+from src import candriver
 
 
 class CanSimulator:
