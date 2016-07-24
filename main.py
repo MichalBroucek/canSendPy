@@ -7,9 +7,9 @@
 
 import sys
 #import can
-from candriver import CanDriver
-import helper
-import can_simulator
+#from src import candriver
+from src import helper
+from src import can_simulator
 
 can_interface = 'vcan0'
 
