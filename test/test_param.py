@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 from src import helper
 
@@ -25,32 +26,49 @@ class TestParam(TestCase):
         self.assertIsNone(self.param.msg, msg='msg is "None" by default')
         self.assertIsNone(self.param.file_name, msg='file_name is "None" by default')
 
-    def test_parse_cmd_params(self):
-        just_one_parameter = ["first",]
-        #self.param.parse_cmd_params(just_one_parameter)
-        # mock ???
-        self.fail()
+    def test_parse_cmd_params_no_params(self):
+        just_one_param = ["first_param_is_name_of_script", ]
+        self.param.print_help = MagicMock()
+        self.param.parse_cmd_params(just_one_param)
+        self.param.print_help.assert_any_call()
 
-    def test_print_help(self):
-        self.fail()
+    def test_parse_cmd_param_list(self):
+        self.param.print_help = MagicMock()
+        self.param.parse_interface_info_param = MagicMock()
+        self.param.parse_cmd_params(["script_name", "-l", ])
+        self.param.print_help.assert_not_called()
+        self.param.parse_interface_info_param.assert_called_once_with(["-l", ])
 
-    def test_get_msg_from_argv_list(self):
-        self.fail()
+    def test_parse_cmd_unknown_param(self):
+        self.param.print_help = MagicMock()
+        self.param.parse_cmd_params(["script_name", "-Z"])
+        self.param.print_help.assert_any_call()
 
-    def test_get_msg_from_argvs(self):
-        self.fail()
+    def test_parse_cmd_unknown_params(self):
+        self.param.print_help = MagicMock()
+        self.param.parse_cmd_params(["script_name", "-Z", "Y"])
+        self.param.print_help.assert_any_call()
 
-    def test_parse_one_msg_param(self):
-        self.fail()
+    # TODO: add all valid parameters calls - for parsing argv
 
-    def test_parse_multi_msg_param(self):
-        self.fail()
 
-    def test_parse_interface_info_param(self):
-        self.fail()
-
-    def test_parse_file_messages(self):
-        self.fail()
-
-    def test_parse_send_default_param(self):
-        self.fail()
+    # def test_get_msg_from_argv_list(self):
+    #     self.fail()
+    #
+    # def test_get_msg_from_argvs(self):
+    #     self.fail()
+    #
+    # def test_parse_one_msg_param(self):
+    #     self.fail()
+    #
+    # def test_parse_multi_msg_param(self):
+    #     self.fail()
+    #
+    # def test_parse_interface_info_param(self):
+    #     self.fail()
+    #
+    # def test_parse_file_messages(self):
+    #     self.fail()
+    #
+    # def test_parse_send_default_param(self):
+    #     self.fail()

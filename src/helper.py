@@ -99,7 +99,7 @@ class Param:
         if len(parameters) == 1:
             print('Wrong number of parameters!')
             self.print_help()
-            exit()
+            return None
 
         action_param = None
 
@@ -132,10 +132,11 @@ class Param:
         else:
             print('Unknown action!\n')
             self.print_help()
+            return None
 
         if action_param is None:
             print('Wrong parameter(s) or this functionality is not implemented yet.')
-            exit()
+            return None
 
         return action_param
 
