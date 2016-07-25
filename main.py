@@ -27,6 +27,10 @@ if __name__ == "__main__":
     # 1. todo: Needs to complete all actions for all parameters
     param = helper.Param()
     simulator_parameters = param.parse_cmd_params(sys.argv)
+
+    if simulator_parameters is None:
+        exit()
+
     simulator = can_simulator.CanSimulator(simulator_parameters, can_interface)
     simulator.run_action()
 
