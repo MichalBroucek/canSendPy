@@ -89,9 +89,9 @@ class TestParam(TestCase):
     def test_parse_cmd_param_file_msg_long(self):
         self.param.print_help = MagicMock()
         self.param.parse_file_messages = MagicMock()
-        self.param.parse_cmd_params(["script_name", "-f", "file_name", ])
+        self.param.parse_cmd_params(["script_name", "--send_file_messages", "file_name", ])
         self.param.print_help.assert_not_called()
-        self.param.parse_file_messages.assert_called_once_with(["-f", "file_name", ])
+        self.param.parse_file_messages.assert_called_once_with(["--send_file_messages", "file_name", ])
 
     def test_parse_cmd_param_default_msg_short(self):
         self.param.print_help = MagicMock()
