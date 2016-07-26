@@ -98,8 +98,9 @@ class CanSimulator:
         """
         msg_group_list = file_io.read_messages_from_file(self.param.file_name)
 
-        # TODO:
-        # Open file
-        # Read messages from file into the list of list MessageGroup (contains can.Message list and delay value)
-        # Send all list of list messages with proper delays
+        for msg_group in msg_group_list:
+            for one_msg in msg_group.messages:
+                self.can_bus.send_one_msg(one_msg)
 
+            delay_sec = msg_group.delay / 1000.0
+            time.sleep(delay_sec)

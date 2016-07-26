@@ -1,5 +1,7 @@
 import can
 
+from copy import deepcopy
+
 """
 Helper methods to work with file(s)
 """
@@ -10,7 +12,7 @@ class MsgGroup:
     Class to hold group of messages with theirs delays
     """
 
-    def __intit__(self):
+    def __init__(self):
         self.messages = []
         self.delay = 0
 
@@ -42,7 +44,7 @@ def read_messages_from_file(file_name):
 
             if is_delay_line(line):
                 msg_group.delay = get_delay_from_line(line)
-                msg_group_list.append(msg_group)
+                msg_group_list.append(deepcopy(msg_group))
                 msg_group.clean()
 
     return msg_group_list
@@ -70,10 +72,10 @@ def get_msg_from_line(line):
     :param line: which contains message definition
     :return: can.Message
     """
-    msg_items = line.split(" ", 9)
+    msg_items = line.strip().split(" ", 9)
 
     try:
-        msgid_int = int(msg_items[0], 0)
+        msgid_int = int(msg_items[0], 16)
         data_list_int = [int(x, 16) for x in msg_items[1:]]
     except ValueError:
         print('Error: Cannot parse message from file!')
@@ -81,7 +83,6 @@ def get_msg_from_line(line):
         print('Cannot cast to int!')
 
     msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
-    print('Parsed message from file: {}'.format(msg))
     return msg
 
 
