@@ -2,7 +2,7 @@
 import time
 import can
 
-from src import helper
+from src import param
 from src import candriver
 
 
@@ -33,19 +33,19 @@ class CanSimulator:
         :param param:
         :return:
         """
-        if self.param.action in helper.LIST:
+        if self.param.action in param.LIST:
             print('CanSimulator: print out list of devices ? - Not implemented yet!\n')
             print(self.__list())
-        elif self.param.action in helper.SEND_ONE_MSG:
+        elif self.param.action in param.SEND_ONE_MSG:
             print('- Sending one message -')
             self.__send_one_msg(self.param.msg)
-        elif self.param.action in helper.SEND_MSG_MULTI:
+        elif self.param.action in param.SEND_MSG_MULTI:
             print('- Sending multiple times one message with specific delay -')
             self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
-        elif self.param.action in helper.SEND_FILE_MSG:
+        elif self.param.action in param.SEND_FILE_MSG:
             print('- Sending one message -')
             self.__send_file_messages(self.param.file_name)
-        elif self.param.action in helper.SEND_DEFAULT:
+        elif self.param.action in param.SEND_DEFAULT:
             print('- Sending default messages -')
             self.__send_default_messages()
         else:

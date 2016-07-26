@@ -8,7 +8,7 @@
 import sys
 #import can
 #from src import candriver
-from src import helper
+from src import param
 from src import can_simulator
 
 can_interface = 'vcan0'
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # 3. Generate output cmd, file, ...
 
     # 1. todo: Needs to complete all actions for all parameters
-    param = helper.Param()
+    param = param.Param()
     simulator_parameters = param.parse_cmd_params(sys.argv)
 
     if simulator_parameters is None:
