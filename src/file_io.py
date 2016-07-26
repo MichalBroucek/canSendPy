@@ -1,3 +1,5 @@
+import can
+
 """
 Helper methods to work with file(s)
 """
@@ -69,9 +71,18 @@ def get_msg_from_line(line):
     :return: can.Message
     """
     msg_items = line.split(" ", 9)
-    #msg = can.Message(arbitration_id=0x18FEF102, data=[1, 2, 3, 4, 5, 6, 7, 8], extended_id=True)
-    # TODO: parse line as can.Message
-    # try .. except
+
+    try:
+        msgid_int = int(msg_items[0], 0)
+        data_list_int = [int(x, 16) for x in msg_items[1:]]
+    except ValueError:
+        print('Error: Cannot parse message from file!')
+        print('Line: ', line)
+        print('Cannot cast to int!')
+
+    msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
+    print('Parsed message from file: {}'.format(msg))
+    return msg
 
 
 def get_delay_from_line(line):

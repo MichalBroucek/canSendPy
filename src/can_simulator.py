@@ -4,6 +4,7 @@ import can
 
 from src import param
 from src import candriver
+from src import file_io
 
 
 class CanSimulator:
@@ -43,8 +44,8 @@ class CanSimulator:
             print('- Sending multiple times one message with specific delay -')
             self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
         elif self.param.action in param.SEND_FILE_MSG:
-            print('- Sending one message -')
-            self.__send_file_messages(self.param.file_name)
+            print('- Sending messages from text file -')
+            self.__send_file_messages()
         elif self.param.action in param.SEND_DEFAULT:
             print('- Sending default messages -')
             self.__send_default_messages()
@@ -91,11 +92,12 @@ class CanSimulator:
             print(msg)
             time.sleep(0.01)
 
-    def __send_file_messages(self, file_name):
+    def __send_file_messages(self):
         """
         Send messages specified in text file
-        :param file_name: text file where messages are specified
         """
+        msg_group_list = file_io.read_messages_from_file(self.param.file_name)
+
         # TODO:
         # Open file
         # Read messages from file into the list of list MessageGroup (contains can.Message list and delay value)

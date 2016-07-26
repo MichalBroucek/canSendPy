@@ -113,22 +113,22 @@ class Param:
             action_param = self.parse_file_messages(parameters[1:])
         elif parameters[1] in SEND_DEFAULT:
             action_param = self.parse_send_default_param(parameters[1:])
-        elif parameters[1] in RECEIVE_ONE_MSG:
-            pass
-        elif parameters[1] in RECEIVE_MULTI_MSG:
-            pass
-        elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
-            pass
-        elif parameters[1] in ADDR_CLAIM_ADDR_USED:
-            pass
-        elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
-            pass
-        elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
-            pass
-        elif parameters[1] in VIN_CODE_RESPONSE:
-            pass
-        elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
-            pass
+        # elif parameters[1] in RECEIVE_ONE_MSG:
+        #     pass
+        # elif parameters[1] in RECEIVE_MULTI_MSG:
+        #     pass
+        # elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
+        #     pass
+        # elif parameters[1] in ADDR_CLAIM_ADDR_USED:
+        #     pass
+        # elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
+        #     pass
+        # elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
+        #     pass
+        # elif parameters[1] in VIN_CODE_RESPONSE:
+        #     pass
+        # elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
+        #     pass
         else:
             print('Unknown action!\n')
             self.print_help()
