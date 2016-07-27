@@ -49,6 +49,9 @@ class CanSimulator:
         elif self.param.action in param.SEND_DEFAULT:
             print('- Sending default messages -')
             self.__send_default_messages()
+        elif self.param.action in param.RECEIVE_ONE_MSG:
+            print('- Receiving one message -')
+            # TODO: implement this
         else:
             print('Unknown action')
             print('Exit')

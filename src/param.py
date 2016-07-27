@@ -87,7 +87,7 @@ class Param:
         self.action = None
         self.timeout = None
         self.nmb_msgs = None
-        self.delay = None
+        self.delay_ms = None
         self.msg = None
         self.file_name = None
 
@@ -113,8 +113,8 @@ class Param:
             action_param = self.parse_file_messages(parameters[1:])
         elif parameters[1] in SEND_DEFAULT:
             action_param = self.parse_send_default_param(parameters[1:])
-        # elif parameters[1] in RECEIVE_ONE_MSG:
-        #     pass
+        elif parameters[1] in RECEIVE_ONE_MSG:
+            action_param = self.parse_receive_one_msg(parameters[1:])
         # elif parameters[1] in RECEIVE_MULTI_MSG:
         #     pass
         # elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
@@ -211,7 +211,7 @@ class Param:
         param = Param()
         param.action = parameters[0]
         param.nmb_msgs = self.__str_to_digit(parameters[1])
-        param.delay = self.__str_to_digit(parameters[2])
+        param.delay_ms = self.__str_to_digit(parameters[2])
         param.msg = self.get_msg_from_argv_list(parameters[3:])
         return param
 
@@ -252,14 +252,46 @@ class Param:
         :param parameters:
         :return: Param() object
         """
-        if len(parameters) != 1:
-            print('Wrong number of parameters for sending default messages!')
-            self.print_help()
+        if not self.__is_right_nmb_of_parameters(parameters, 1,
+                                                 'Wrong number of parameters for sending default messages!'):
             return None
 
         param = Param()
         param.action = parameters[0]
         return param
+
+    def parse_receive_one_msg(self, parameters):
+        """
+        Parse parameters for receving one msg
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 1,
+                                                 'Wrong number of parameters to receive one message!'):
+            return None
+
+        param = Param()
+        param.action = parameters[0]
+
+        try:
+            param.delay_ms = int(parameters[1])
+        except ValueError:
+            print('Cannot parse max_timeout parameter!')
+            return None
+
+        return param
+
+    def __is_right_nmb_of_parameters(self, parameters, parameters_number, message):
+        """
+        Check number of parameters
+        :return:
+        """
+        if len(parameters) != parameters_number:
+            print(message)
+            self.print_help()
+            return False
+        else:
+            return True
 
     @staticmethod
     def __str_to_digit(positive_int_str):

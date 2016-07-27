@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-# 1. print out message which is sent
 # 2. implement missing functionality - from original canSend (with different parameters ...)
 # 3. Add unit tests for this tool!
 
@@ -34,4 +33,4 @@ if __name__ == "__main__":
     simulator = can_simulator.CanSimulator(simulator_parameters, can_interface)
     simulator.run_action()
 
-    print("Done")
+    print("- Done -")
