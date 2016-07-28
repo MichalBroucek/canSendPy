@@ -88,6 +88,7 @@ class Param:
         self.timeout = None
         self.nmb_msgs = None
         self.delay_ms = None
+        self.max_wait_time_ms = None
         self.msg = None
         self.file_name = None
 
@@ -266,7 +267,7 @@ class Param:
         :param parameters:
         :return:
         """
-        if not self.__is_right_nmb_of_parameters(parameters, 1,
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
                                                  'Wrong number of parameters to receive one message!'):
             return None
 
@@ -274,7 +275,7 @@ class Param:
         param.action = parameters[0]
 
         try:
-            param.delay_ms = int(parameters[1])
+            param.max_wait_time_ms = int(parameters[1])
         except ValueError:
             print('Cannot parse max_timeout parameter!')
             return None

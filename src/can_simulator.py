@@ -45,13 +45,13 @@ class CanSimulator:
             self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
         elif self.param.action in param.SEND_FILE_MSG:
             print('- Sending messages from text file -')
-            self.__send_file_messages()
+            self.__send_file_messages(self.param.file_name)
         elif self.param.action in param.SEND_DEFAULT:
             print('- Sending default messages -')
             self.__send_default_messages()
         elif self.param.action in param.RECEIVE_ONE_MSG:
             print('- Receiving one message -')
-            # TODO: implement this
+            self.__receive_one_msg(self.param.max_wait_time_ms)
         else:
             print('Unknown action')
             print('Exit')
@@ -95,11 +95,11 @@ class CanSimulator:
             print(msg)
             time.sleep(0.01)
 
-    def __send_file_messages(self):
+    def __send_file_messages(self, file_name):
         """
         Send messages specified in text file
         """
-        msg_group_list = file_io.read_messages_from_file(self.param.file_name)
+        msg_group_list = file_io.read_messages_from_file(file_name)
 
         for msg_group in msg_group_list:
             for one_msg in msg_group.messages:
@@ -107,3 +107,11 @@ class CanSimulator:
 
             delay_sec = msg_group.delay / 1000.0
             time.sleep(delay_sec)
+
+    def __receive_one_msg(self, max_timeout_ms):
+        """
+        Wait max. time to receive one can msg
+        """
+        max_time_s = max_timeout_ms / 1000.0
+        print('Waiting for one can message for {0} seconds'.format(max_time_s))
+        self.can_bus.wait_for_one_msg(max_time_s)

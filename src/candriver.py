@@ -25,7 +25,7 @@ class CanDriver:
         :return: can message
         """
         msg = self.bus.recv(max_timeout_seconds)
-        assert isinstance(msg, can.Message)
+        #assert isinstance(msg, can.Message)
         return msg
 
     def wait_for_multi_msg(self):
