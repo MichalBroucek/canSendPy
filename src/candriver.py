@@ -28,11 +28,13 @@ class CanDriver:
         #assert isinstance(msg, can.Message)
         return msg
 
-    def wait_for_multi_msg(self):
+    def get_one_msg(self):
         """
-        Wait for multiple can messages
-        :return: list of can messages
+        Get actual message from can-bus
+        :return:
         """
+        msg = self.bus.recv(0.0)
+        return msg
 
     def send_one_msg(self, can_msg):
         """

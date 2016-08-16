@@ -49,12 +49,12 @@ Actions:
   -r --receive_one_message    [max_timeout]                         Wait [ms] for one message for specific number of milliseconds.
   -R --receive_messages       [max_timeout]                         Wait [ms] for all messages for specific number of milliseconds.
   -an --addr_claim_no_response [max_timeout]                        Wait [ms] for 'Address claim message' send no response (address can be used).
-  -au --addr_claim_addr_used   [max_timeout]                        Wait [ms] for 'Address claim message' send 'Address claimed' response (address can NOT be used).
   -aU --addr_claim_addr_used_multi [max_timeout] [max_responses]    Wait max [ms] for 'Address claim' and response by [max_responses] nmb. of Addr. Claimed msgs.
   -nU --new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
                                                                       Wait [max_timeout] for response(s). Generate [max_responses] Address Collisions
   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
+  -e --engine_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value
   -h --help                                                         Print this help
 Examples:
     canSend.py send_one_message 18FEF100 01 02 03 04 05 06 07 08
@@ -69,12 +69,13 @@ SEND_FILE_MSG = ("-f", "--send_file_messages")
 SEND_DEFAULT = ("-d", "--send_default_messages")
 RECEIVE_ONE_MSG = ("-r", "--receive_one_message")
 RECEIVE_MULTI_MSG = ("-R", "--receive_messages")
+# TODO:
 ADDR_CLAIM_NO_RESPONSE = ("-an", "--addr_claim_no_response")
-ADDR_CLAIM_ADDR_USED = ("-au", "--addr_claim_addr_used")
-ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used_multi")
+ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used")
 NEW_DEV_ADDR_USED_MULTI = ("-nU", "--new_device_addr_used_multi")
 VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
 VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
+# TODO: Engine On/Off simulation ...
 HELP = ("-h", "--help")
 
 
@@ -114,22 +115,22 @@ class Param:
             action_param = self.parse_file_messages(parameters[1:])
         elif parameters[1] in SEND_DEFAULT:
             action_param = self.parse_send_default_param(parameters[1:])
+        # TODO: unit tests ...
         elif parameters[1] in RECEIVE_ONE_MSG:
             action_param = self.parse_receive_one_msg(parameters[1:])
-        # elif parameters[1] in RECEIVE_MULTI_MSG:
-        #     pass
-        # elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
-        #     pass
-        # elif parameters[1] in ADDR_CLAIM_ADDR_USED:
-        #     pass
-        # elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
-        #     pass
-        # elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
-        #     pass
-        # elif parameters[1] in VIN_CODE_RESPONSE:
-        #     pass
-        # elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
-        #     pass
+        elif parameters[1] in RECEIVE_MULTI_MSG:
+            action_param = self.parse_receive_multi_msg(parameters[1:])
+        elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
+            action_param = self.parse_addr_claim_no_response(parameters[1:])
+        elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
+            action_param = self.parse_addr_claim_addr_used(parameters[1:])
+        elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
+            action_param = self.parse_new_device_addr_used(parameters[1:])
+        elif parameters[1] in VIN_CODE_RESPONSE:
+            action_param = self.parse_vin_code_single(parameters[1:])
+        elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
+            action_param = self.parse_vin_code_multi(parameters[1:])
+        # TODO: Engine On/Off ...
         else:
             print('Unknown action!\n')
             self.print_help()
@@ -271,15 +272,83 @@ class Param:
                                                  'Wrong number of parameters to receive one message!'):
             return None
 
-        param = Param()
-        param.action = parameters[0]
+        param = self.__get_param_max_time(parameters)
+        return param
 
-        try:
-            param.max_wait_time_ms = int(parameters[1])
-        except ValueError:
-            print('Cannot parse max_timeout parameter!')
+    def parse_receive_multi_msg(self, parameters):
+        """
+        Receive multiple messages stop when there are no other messages in max_wait
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to receive multi messages!'):
             return None
 
+        param = self.__get_param_max_time(parameters)
+        return param
+
+    def parse_addr_claim_no_response(self, parameters):
+        """
+        Wait for J1939 'Address claim' request and send no response (no address collision)
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to receive one \'Address Claim\' message!'):
+            return None
+
+        param = self.__get_param_max_time(parameters)
+        return param
+
+    def parse_addr_claim_addr_used(self, parameters):
+        """
+        Wait for J1939 'Address claim' request and send one address claimed response (one or more address collisions)
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 3,
+                                                 'Wrong number of parameters to receive \'Address Claim\' message(s) \ '
+                                                 'and send response(s)!'):
+            return None
+
+        param = self.__get_param_max_time_max_tries(parameters)
+        return param
+
+    def parse_new_device_addr_used(self, parameters):
+        """
+        Connect new device which cause address collision(s) on can-bus
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 3, 'Wrong number of parameters to simulate new device on '
+                                                 'can-bus'):
+            return None
+
+        param = self.__get_param_max_time_max_tries(parameters)
+        return param
+
+    def parse_vin_code_single(self, parameters):
+        """
+        Wait for VIN code request msg and response by VIN code as single can frame msg
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate VIN code '
+                                                                'response as single message!'):
+            return None
+
+        param = self.__get_param_max_time(parameters)
+        return param
+
+    def parse_vin_code_multi(self, parameters):
+        """
+        Wait for VIN code request msg and response by VIN code as multi can frame msg
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate VIN code '
+                                                                'response as multi message!'):
+            return None
+
+        param = self.__get_param_max_time(parameters)
         return param
 
     def __is_right_nmb_of_parameters(self, parameters, parameters_number, message):
@@ -293,6 +362,40 @@ class Param:
             return False
         else:
             return True
+
+    @staticmethod
+    def __get_param_max_time(parameters):
+        """
+        Helper method to get Param object with max_timeout for different actions
+        :param parameters:
+        :return:
+        """
+        param = Param()
+        param.action = parameters[0]
+
+        try:
+            param.max_wait_time_ms = int(parameters[1])
+        except ValueError:
+            print('Cannot parse max_timeout parameter!')
+            return None
+
+        return param
+
+    def __get_param_max_time_max_tries(self, parameters):
+        """
+        Helper method to get Param object with max_timeout and max number of messages to send
+        :param parameters:
+        :return:
+        """
+        param = self.__get_param_max_time(parameters)
+
+        try:
+            param.nmb_msgs = int(parameters[2])
+        except ValueError:
+            print('Cannot parse number of messages to send parameter!')
+            return None
+
+        return param
 
     @staticmethod
     def __str_to_digit(positive_int_str):

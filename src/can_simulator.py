@@ -52,6 +52,26 @@ class CanSimulator:
         elif self.param.action in param.RECEIVE_ONE_MSG:
             print('- Receiving one message -')
             self.__receive_one_msg(self.param.max_wait_time_ms)
+        elif self.param.action in param.RECEIVE_MULTI_MSG:
+            print('- Receiving multi messages -')
+            self.__receive_multi_msg(self.param.max_wait_time_ms)
+        elif self.param.action in param.ADDR_CLAIM_NO_RESPONSE:
+            print('- Wait for one Address Claim request and send no response -')
+            self.__wait_for_addr_claim_no_collision(self.param.max_wait_time_ms)
+        elif self.param.action in param.ADDR_CLAIM_ADDR_USED_MULTI:
+            print('- Wait for Address Claim requests and simulate multiple address collisions -')
+            # TODO: ...
+            #self.__wait_for_addr_claim_multi_collisions()
+        elif self.param.action in param.NEW_DEV_ADDR_USED_MULTI:
+            print('- Connect new device on can-bus and cause multiple address collisions -')
+            # TODO: ...
+        elif self.param.action in param.VIN_CODE_RESPONSE:
+            print('- Simulate VIN code response as single frame message -')
+            # TODO: ...
+        elif self.param.action in param.VIN_CODE_RESPONSE_MULTI:
+            print('- Simulate VIN code response as multi frame message -')
+            # TODO: ...
+        # TODO: Add Engine shift RPM simulation
         else:
             print('Unknown action')
             print('Exit')
@@ -114,4 +134,57 @@ class CanSimulator:
         """
         max_time_s = max_timeout_ms / 1000.0
         print('Waiting for one can message for {0} seconds'.format(max_time_s))
-        self.can_bus.wait_for_one_msg(max_time_s)
+        msg = self.can_bus.wait_for_one_msg(max_time_s)
+        print(msg)
+
+    def __receive_multi_msg(self, max_timeout_ms):
+        """
+        Wait for multiple messages - stop receiving when there are no messages for max_timeout_ms
+        :param max_timeout_ms:
+        :return:
+        """
+        max_time_s = max_timeout_ms / 1000.0
+        print('Waiting for multiple can messages maximum for {0} seconds'.format(max_time_s))
+        while True:
+            msg = self.can_bus.wait_for_one_msg(max_time_s)
+            if msg is None:
+                break
+            print(msg)
+
+    def __wait_for_addr_claim_no_collision(self, max_wait_time_ms):
+        """
+        Wait max. time for one Address claim request
+        :param max_wait_time_ms:
+        :return:
+        """
+        max_time_s = max_wait_time_ms / 1000.0
+        print('Waiting {0} seconds for one \'Address claim\' request message'.format(max_time_s))
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        while actual_waiting_time <= max_time_s:
+            msg = self.can_bus.get_one_msg()
+
+            if msg is not None:
+                if self.__is_addr_claim_msg(msg.arbitration_id):
+                    print(msg)
+                    break
+
+            actual_waiting_time = time.time() - start_time
+
+    @staticmethod
+    def __is_addr_claim_msg(arbitration_id):
+        """
+        Check if 'arbitration_id' from can-bus contains expected msg ID
+        :param msg_id:
+        :return:
+        """
+        MSG_ID_MASK = 0x00FF0000
+        ADDR_CLAIM_MSG_ID = 0xEE
+        masked_msg_id = (MSG_ID_MASK & arbitration_id) >> 16
+        if masked_msg_id == ADDR_CLAIM_MSG_ID:
+            return True
+        else:
+            False
+
+
