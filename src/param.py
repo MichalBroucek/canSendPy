@@ -2,32 +2,8 @@ __author__ = 'brouk'
 
 import can
 
-# INTERFACE FOR WIN - SAME HAS TO BE IMPLEMENTED here
-# 	cout << "  list                                                        Print list of connected devices with information about them." << endl;
-# DONE 	cout << "  send_one_message msgId byte1 byte2 ... byte8                Send one specific CAN message with 8 bytes of data." << endl;
-# 	cout << "  send_file_messages fileName                                 Send messages defined in the text file. Format of file is:" << endl;
-# 	cout << "                                                                18fef100 21 21 21 21 21 21 21 21" << endl;
-# 	cout << "                                                                cf00400 22 22 22 22 22 22 22 22" << endl;
-# 	cout << "                                                                delay 700" << endl;
-# 	cout << "                                                                18fef100 31 31 31 31 31 31 31 31" << endl;
-#     cout << "                                                                delay 800" << endl;
-# DONE	cout << "  send_default_messages                                       Send default messages." << endl;
-# 	cout << "  receive_one_message    [max_timeout]                        Wait [ms] for one message for specific number of milliseconds." << endl;
-# 	cout << "  receive_messages       [max_timeout]                        Wait [ms] for all messages for specific number of milliseconds." << endl;
-# 	cout << "  addr_claim_no_response [max_timeout]                        Wait [ms] for 'Address claim message' send no response (address can be used)." << endl;
-# 	cout << "  addr_claim_addr_used   [max_timeout]                        Wait [ms] for 'Address claim message' send 'Address claimed' response (address can NOT be used)." << endl;
-# 	cout << "  addr_claim_addr_used_multi [max_timeout] [max_responses]    Wait max [ms] for 'Address claim' and response by [max_responses] nmb. of Addr. Claimed msgs." << endl;
-# 	cout << "  new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2." << endl;
-# 	cout << "                                                                Wait [max_timeout] for response(s)" << endl;
-# 	cout << "                                                                Generate [max_responses] Address Collisions" << endl;
-# 	cout << "  vin_code_response       [max_timeout]                       Wait for VIN code request and send VIN code as single message back." << endl;
-# 	cout << "  vin_code_response_multi [max_timeout]                       Wait for VIN code request and send VIN code as multi frame message back." << endl;
-# 	cout << "  help                                                        Print this help." << endl;
-# 	cout << "\nExamples:" << endl;
-# 	cout << "canSend.exe send_one_message 18FEF100 01 02 03 04 05 06 07 08" << endl;
-# 	cout << "canSend.exe send_file_messages c:\\workspace_sandbox\\canSend\\Debug\\CanData.txt" << endl;
-# }
 
+# TODO: return self instead new object ?
 
 help_str = """
 'canSend.py' - cmd tool to simulate J1939 can-bus processes
@@ -50,11 +26,11 @@ Actions:
   -R --receive_messages       [max_timeout]                         Wait [ms] for all messages for specific number of milliseconds.
   -an --addr_claim_no_response [max_timeout]                        Wait [ms] for 'Address claim message' send no response (address can be used).
   -aU --addr_claim_addr_used_multi [max_timeout] [max_responses]    Wait max [ms] for 'Address claim' and response by [max_responses] nmb. of Addr. Claimed msgs.
-  -nU --new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
-                                                                      Wait [max_timeout] for response(s). Generate [max_responses] Address Collisions
+  -nU --new_device_addr_used_multi [max_responses]                  Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
+                                                                      Wait default (250ms) time for collisions. Generate [max_responses] Address Collisions.
   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
-  -e --engine_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value
+  -e --engine_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
   -h --help                                                         Print this help
 Examples:
     canSend.py send_one_message 18FEF100 01 02 03 04 05 06 07 08
@@ -69,13 +45,12 @@ SEND_FILE_MSG = ("-f", "--send_file_messages")
 SEND_DEFAULT = ("-d", "--send_default_messages")
 RECEIVE_ONE_MSG = ("-r", "--receive_one_message")
 RECEIVE_MULTI_MSG = ("-R", "--receive_messages")
-# TODO:
 ADDR_CLAIM_NO_RESPONSE = ("-an", "--addr_claim_no_response")
 ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used")
 NEW_DEV_ADDR_USED_MULTI = ("-nU", "--new_device_addr_used_multi")
 VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
 VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
-# TODO: Engine On/Off simulation ...
+ENGINE_SHIFT = ("-e", "--engine_shift")
 HELP = ("-h", "--help")
 
 
@@ -88,10 +63,14 @@ class Param:
         self.action = None
         self.timeout = None
         self.nmb_msgs = None
-        self.delay_ms = None
+        self.delay_msg_ms = None
         self.max_wait_time_ms = None
         self.msg = None
         self.file_name = None
+        self.rpm_value_1 = None
+        self.rpm_value_2 = None
+        self.value_1_ms = None
+        self.value_2_ms = None
 
     def parse_cmd_params(self, parameters):
         """
@@ -130,7 +109,8 @@ class Param:
             action_param = self.parse_vin_code_single(parameters[1:])
         elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
             action_param = self.parse_vin_code_multi(parameters[1:])
-        # TODO: Engine On/Off ...
+        elif parameters[1] in ENGINE_SHIFT:
+            action_param = self.parse_engine_shift(parameters[1:])
         else:
             print('Unknown action!\n')
             self.print_help()
@@ -213,7 +193,7 @@ class Param:
         param = Param()
         param.action = parameters[0]
         param.nmb_msgs = self.__str_to_digit(parameters[1])
-        param.delay_ms = self.__str_to_digit(parameters[2])
+        param.delay_msg_ms = self.__str_to_digit(parameters[2])
         param.msg = self.get_msg_from_argv_list(parameters[3:])
         return param
 
@@ -320,11 +300,13 @@ class Param:
         Connect new device which cause address collision(s) on can-bus
         :return:
         """
-        if not self.__is_right_nmb_of_parameters(parameters, 3, 'Wrong number of parameters to simulate new device on '
-                                                 'can-bus'):
+        if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate new device on '
+                                                                'can-bus'):
             return None
 
-        param = self.__get_param_max_time_max_tries(parameters)
+        param = Param()
+        param.action = parameters[0]
+        param.nmb_msgs = self.__str_to_digit(parameters[1])
         return param
 
     def parse_vin_code_single(self, parameters):
@@ -349,6 +331,24 @@ class Param:
             return None
 
         param = self.__get_param_max_time(parameters)
+        return param
+
+    def parse_engine_shift(self, parameters):
+        """
+        Parse parameters Engine rpm shift simulation
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 5,
+                                                 'Wrong number of parameters to simulate Engine RPM shift'):
+            return None
+
+        param = Param()
+        param.action = parameters[0]
+        param.rpm_value_1 = self.__str_to_digit(parameters[1])
+        param.value_1_ms = self.__str_to_digit(parameters[2])
+        param.rpm_value_2 = self.__str_to_digit(parameters[3])
+        param.value_2_ms = self.__str_to_digit(parameters[4])
         return param
 
     def __is_right_nmb_of_parameters(self, parameters, parameters_number, message):

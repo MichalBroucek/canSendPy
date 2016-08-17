@@ -44,10 +44,3 @@ class CanDriver:
         """
         assert isinstance(can_msg, can.Message)
         self.bus.send(can_msg)
-
-    def send_multi_msg(self, can_msg_list):
-        """
-        Send list of multi messages
-        :param can_msg_list:
-        :return:
-        """
