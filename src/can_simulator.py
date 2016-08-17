@@ -9,6 +9,7 @@ from src import file_io
 # TODO: Use constants for Ehubo2 NAME, Default Ehubo2 Address Claim (ID ?, whole msg ?)
 # inline FCE for small functions (__ms_to_sedonds, ...)
 # Don't use parameters as param is class variable
+# use just reference to param OR self.param inside individual methods ... easier to read ...
 
 class CanSimulator:
     """
@@ -45,7 +46,7 @@ class CanSimulator:
             self.__send_one_msg(self.param.msg)
         elif self.param.action in param.SEND_MSG_MULTI:
             print('- Sending multiple times one message with specific delay -')
-            self.__send_multi_msg(self.param.nmb_msgs, self.param.delay, self.param.msg)
+            self.__send_multi_msg(self.param.nmb_msgs, self.param.delay_msg_ms, self.param.msg)
         elif self.param.action in param.SEND_FILE_MSG:
             print('- Sending messages from text file -')
             self.__send_file_messages(self.param.file_name)

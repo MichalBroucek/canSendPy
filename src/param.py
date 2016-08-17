@@ -82,45 +82,45 @@ class Param:
             self.print_help()
             return None
 
-        action_param = None
+        self.action = parameters[1]
 
         if parameters[1] in LIST:
-            action_param = self.parse_interface_info_param(parameters[1:])
+            self.parse_interface_info_param(parameters[1:])
         elif parameters[1] in SEND_ONE_MSG:
-            action_param = self.parse_one_msg_param(parameters[1:])
+            self.parse_one_msg_param(parameters[1:])
         elif parameters[1] in SEND_MSG_MULTI:
-            action_param = self.parse_multi_msg_param(parameters[1:])
+            self.parse_multi_msg_param(parameters[1:])
         elif parameters[1] in SEND_FILE_MSG:
-            action_param = self.parse_file_messages(parameters[1:])
+            self.parse_file_messages(parameters[1:])
         elif parameters[1] in SEND_DEFAULT:
-            action_param = self.parse_send_default_param(parameters[1:])
+            self.parse_send_default_param(parameters[1:])
         # TODO: unit tests ...
         elif parameters[1] in RECEIVE_ONE_MSG:
-            action_param = self.parse_receive_one_msg(parameters[1:])
+            self.parse_receive_one_msg(parameters[1:])
         elif parameters[1] in RECEIVE_MULTI_MSG:
-            action_param = self.parse_receive_multi_msg(parameters[1:])
+            self.parse_receive_multi_msg(parameters[1:])
         elif parameters[1] in ADDR_CLAIM_NO_RESPONSE:
-            action_param = self.parse_addr_claim_no_response(parameters[1:])
+            self.parse_addr_claim_no_response(parameters[1:])
         elif parameters[1] in ADDR_CLAIM_ADDR_USED_MULTI:
-            action_param = self.parse_addr_claim_addr_used(parameters[1:])
+            self.parse_addr_claim_addr_used(parameters[1:])
         elif parameters[1] in NEW_DEV_ADDR_USED_MULTI:
-            action_param = self.parse_new_device_addr_used(parameters[1:])
+            self.parse_new_device_addr_used(parameters[1:])
         elif parameters[1] in VIN_CODE_RESPONSE:
-            action_param = self.parse_vin_code_single(parameters[1:])
+            self.parse_vin_code_single(parameters[1:])
         elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
-            action_param = self.parse_vin_code_multi(parameters[1:])
+            self.parse_vin_code_multi(parameters[1:])
         elif parameters[1] in ENGINE_SHIFT:
-            action_param = self.parse_engine_shift(parameters[1:])
+            self.parse_engine_shift(parameters[1:])
         else:
             print('Unknown action!\n')
             self.print_help()
             return None
 
-        if action_param is None:
+        if self.action is None:
             print('Wrong parameter(s) or this functionality is not implemented yet.')
             return None
 
-        return action_param
+        return self
 
     @staticmethod
     def print_help():
@@ -158,7 +158,6 @@ class Param:
         msgid_int = int(argvs[0], 0)
         data_list_int = bytearray(argvs[1].decode('hex'))
         msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
-        # print(msg)
         return msg
 
     def parse_one_msg_param(self, parameters):
@@ -173,11 +172,8 @@ class Param:
             self.print_help()
             return None
 
-        param = Param()
-        param.action = parameters[0]
-        param.msg = self.get_msg_from_argv_list(parameters[1:])
-        # param.msg = self.get_msg_from_argvs(parameters[1:])
-        return param
+        self.action = parameters[0]
+        self.msg = self.get_msg_from_argv_list(parameters[1:])
 
     def parse_multi_msg_param(self, parameters):
         """
@@ -190,12 +186,10 @@ class Param:
             self.print_help()
             return None
 
-        param = Param()
-        param.action = parameters[0]
-        param.nmb_msgs = self.__str_to_digit(parameters[1])
-        param.delay_msg_ms = self.__str_to_digit(parameters[2])
-        param.msg = self.get_msg_from_argv_list(parameters[3:])
-        return param
+        self.action = parameters[0]
+        self.nmb_msgs = self.__str_to_digit(parameters[1])
+        self.delay_msg_ms = self.__str_to_digit(parameters[2])
+        self.msg = self.get_msg_from_argv_list(parameters[3:])
 
     def parse_interface_info_param(self, parameters):
         """
@@ -206,11 +200,7 @@ class Param:
         if len(parameters) != 1:
             print('Wrong number of parameters for listing interface info!')
             self.print_help()
-            return None
-
-        param = Param()
-        param.action = parameters[0]
-        return param
+            self.action = None
 
     def parse_file_messages(self, parameters):
         """
@@ -221,12 +211,9 @@ class Param:
         if len(parameters) != 2:
             print('Wrong number of parameters for sending messages! from text file!')
             self.print_help()
-            return None
+            self.action = None
 
-        param = Param()
-        param.action = parameters[0]
-        param.file_name = parameters[1]
-        return param
+        self.file_name = parameters[1]
 
     def parse_send_default_param(self, parameters):
         """
@@ -236,11 +223,7 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 1,
                                                  'Wrong number of parameters for sending default messages!'):
-            return None
-
-        param = Param()
-        param.action = parameters[0]
-        return param
+            self.action = None
 
     def parse_receive_one_msg(self, parameters):
         """
@@ -250,10 +233,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2,
                                                  'Wrong number of parameters to receive one message!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time(parameters)
-        return param
+        self.__set_param_max_time(parameters)
 
     def parse_receive_multi_msg(self, parameters):
         """
@@ -263,10 +245,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2,
                                                  'Wrong number of parameters to receive multi messages!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time(parameters)
-        return param
+        self.__set_param_max_time(parameters)
 
     def parse_addr_claim_no_response(self, parameters):
         """
@@ -276,10 +257,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2,
                                                  'Wrong number of parameters to receive one \'Address Claim\' message!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time(parameters)
-        return param
+        self.__set_param_max_time(parameters)
 
     def parse_addr_claim_addr_used(self, parameters):
         """
@@ -290,10 +270,9 @@ class Param:
         if not self.__is_right_nmb_of_parameters(parameters, 3,
                                                  'Wrong number of parameters to receive \'Address Claim\' message(s) \ '
                                                  'and send response(s)!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time_max_tries(parameters)
-        return param
+        self.__set_param_max_time_max_tries(parameters)
 
     def parse_new_device_addr_used(self, parameters):
         """
@@ -302,12 +281,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate new device on '
                                                                 'can-bus'):
-            return None
+            self.action = None
 
-        param = Param()
-        param.action = parameters[0]
-        param.nmb_msgs = self.__str_to_digit(parameters[1])
-        return param
+        self.nmb_msgs = self.__str_to_digit(parameters[1])
 
     def parse_vin_code_single(self, parameters):
         """
@@ -316,10 +292,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate VIN code '
                                                                 'response as single message!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time(parameters)
-        return param
+        self.__set_param_max_time(parameters)
 
     def parse_vin_code_multi(self, parameters):
         """
@@ -328,10 +303,9 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate VIN code '
                                                                 'response as multi message!'):
-            return None
+            self.action = None
 
-        param = self.__get_param_max_time(parameters)
-        return param
+        self.__set_param_max_time(parameters)
 
     def parse_engine_shift(self, parameters):
         """
@@ -341,15 +315,12 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 5,
                                                  'Wrong number of parameters to simulate Engine RPM shift'):
-            return None
+            self.action = None
 
-        param = Param()
-        param.action = parameters[0]
-        param.rpm_value_1 = self.__str_to_digit(parameters[1])
-        param.value_1_ms = self.__str_to_digit(parameters[2])
-        param.rpm_value_2 = self.__str_to_digit(parameters[3])
-        param.value_2_ms = self.__str_to_digit(parameters[4])
-        return param
+        self.rpm_value_1 = self.__str_to_digit(parameters[1])
+        self.value_1_ms = self.__str_to_digit(parameters[2])
+        self.rpm_value_2 = self.__str_to_digit(parameters[3])
+        self.value_2_ms = self.__str_to_digit(parameters[4])
 
     def __is_right_nmb_of_parameters(self, parameters, parameters_number, message):
         """
@@ -363,39 +334,31 @@ class Param:
         else:
             return True
 
-    @staticmethod
-    def __get_param_max_time(parameters):
+    def __set_param_max_time(self, parameters):
         """
-        Helper method to get Param object with max_timeout for different actions
+        Helper method to set Param object with max_timeout for different actions
         :param parameters:
         :return:
         """
-        param = Param()
-        param.action = parameters[0]
-
         try:
-            param.max_wait_time_ms = int(parameters[1])
+            self.max_wait_time_ms = int(parameters[1])
         except ValueError:
             print('Cannot parse max_timeout parameter!')
-            return None
+            self.max_wait_time_ms = 0
 
-        return param
-
-    def __get_param_max_time_max_tries(self, parameters):
+    def __set_param_max_time_max_tries(self, parameters):
         """
         Helper method to get Param object with max_timeout and max number of messages to send
         :param parameters:
         :return:
         """
-        param = self.__get_param_max_time(parameters)
+        self.__set_param_max_time(parameters)
 
         try:
-            param.nmb_msgs = int(parameters[2])
+            self.nmb_msgs = int(parameters[2])
         except ValueError:
             print('Cannot parse number of messages to send parameter!')
-            return None
-
-        return param
+            self.nmb_msgs = 0
 
     @staticmethod
     def __str_to_digit(positive_int_str):
