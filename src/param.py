@@ -30,7 +30,7 @@ Actions:
                                                                       Wait default (250ms) time for collisions. Generate [max_responses] Address Collisions.
   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
-  -e --engine_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
+  -e --engine_rpm_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
   -h --help                                                         Print this help
 Examples:
     canSend.py -s 0x18FEF100 01 02 03 04 05 06 07 08
@@ -50,7 +50,7 @@ ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used")
 NEW_DEV_ADDR_USED_MULTI = ("-nU", "--new_device_addr_used_multi")
 VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
 VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
-ENGINE_SHIFT = ("-e", "--engine_shift")
+ENGINE_SHIFT = ("-e", "--engine_rpm_shift")
 HELP = ("-h", "--help")
 
 
