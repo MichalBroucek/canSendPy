@@ -7,9 +7,9 @@ from src import file_io
 
 
 # TODO: Use constants for Ehubo2 NAME, Default Ehubo2 Address Claim (ID ?, whole msg ?)
-# inline FCE for small functions (__ms_to_sedonds, ...)
-# Don't use parameters as param is class variable
-# use just reference to param OR self.param inside individual methods ... easier to read ...
+# inline FCE for small functions (__ms_to_sedonds, ...) ?
+# Don't use parameters as param is class variable ?
+# use just reference to param OR self.param inside individual methods ... easier to read ... ?
 
 class CanSimulator:
     """

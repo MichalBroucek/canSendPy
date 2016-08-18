@@ -1,9 +1,4 @@
-__author__ = 'brouk'
-
 import can
-
-
-# TODO: return self instead new object ?
 
 help_str = """
 'canSend.py' - cmd tool to simulate J1939 can-bus processes
@@ -33,7 +28,7 @@ Actions:
   -e --engine_rpm_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
   -h --help                                                         Print this help
 Examples:
-    canSend.py -s 0x18FEF100 01 02 03 04 05 06 07 08
+    canSend.py -s 18FEF100 01 02 03 04 05 06 07 08
     canSend.py -f messages_example.txt
 """
 
@@ -137,7 +132,7 @@ class Param:
             self.print_help()
             return None
 
-        msgid_int = int(argv_list[0], 0)
+        msgid_int = int(argv_list[0], 16)
         data_list_int = [int(x, 16) for x in argv_list[1:]]
 
         msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
