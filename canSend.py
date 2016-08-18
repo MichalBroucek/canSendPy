@@ -7,8 +7,8 @@ import sys
 from src import param
 from src import can_simulator
 
-can_interface = 'vcan0'
-#can_interface = 'can0'
+#can_interface = 'vcan0'
+can_interface = 'can0'
 
 if __name__ == "__main__":
     param = param.Param()

@@ -6,25 +6,10 @@ from src import candriver
 from src import file_io
 
 
-# TODO: Use constants for Ehubo2 NAME, Default Ehubo2 Address Claim (ID ?, whole msg ?)
-# inline FCE for small functions (__ms_to_sedonds, ...) ?
-# Don't use parameters as param is class variable ?
-# use just reference to param OR self.param inside individual methods ... easier to read ... ?
-
 class CanSimulator:
     """
-    Useful methods to simulate different ECU behavior
-    - wait for specific message (timeout)
-    - wait for Address Claim request - no collision
-    - wait for Address Claim request - one collision
-    - wait for Address Claim request - multiple collision
-    - wait for Address Claim request - no addresses available
-    - wait for new device Address Claim - no collision
-    - wait for new device Address Claim - one collision
-    - wait for new device Address Claim - multiple collision
-    - wait for new device Address Claim - no addresses left
-    - wait for VIN code request - VIN code single frame response
-    - wait for VIN code request - VIN code multiple frame response
+    Methods to simulate different ECU behavior (wait for one or multi can msg, send one or multi msg, sending messages
+    from file, address collision simulations, VIN code responses, engine RPM simulations, ...)
     """
 
     def __init__(self, cmd_parameters, can_interface):
@@ -338,9 +323,8 @@ class CanSimulator:
         actual_waiting_time = 0.0
 
         while actual_waiting_time <= max_time_s:
-            #msg = self.can_bus.get_one_msg()
+            # msg = self.can_bus.get_one_msg()
             msg = self.can_bus.wait_for_one_msg(0.005)
-
 
             if msg is not None:
                 print(msg)
