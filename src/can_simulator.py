@@ -210,7 +210,7 @@ class CanSimulator:
         """
         assert isinstance(msg, can.Message)
         MSG_ID_MASK = 0x00FF0000
-        REQUEST_MSG_ID = 0xEE  # J1939 Request message ID
+        REQUEST_MSG_ID = 0xEA  # J1939 Request message ID
         VIN_CODE_MSG_ID = 0xFEEC
         requested_msg_id = 0  # J1939 msg ID which is requested from network
         masked_msg_id = (MSG_ID_MASK & msg.arbitration_id) >> 16
@@ -338,9 +338,12 @@ class CanSimulator:
         actual_waiting_time = 0.0
 
         while actual_waiting_time <= max_time_s:
-            msg = self.can_bus.get_one_msg()
+            #msg = self.can_bus.get_one_msg()
+            msg = self.can_bus.wait_for_one_msg(0.005)
+
 
             if msg is not None:
+                print(msg)
                 if self.__is_VIN_code_request_msg(msg):
                     print(msg)
                     return msg

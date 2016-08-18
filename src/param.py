@@ -33,8 +33,8 @@ Actions:
   -e --engine_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
   -h --help                                                         Print this help
 Examples:
-    canSend.py send_one_message 18FEF100 01 02 03 04 05 06 07 08
-    canSend.py send_file_messages ~/workspace_sandbox/canSend/Debug/CanData.txt
+    canSend.py -s 0x18FEF100 01 02 03 04 05 06 07 08
+    canSend.py -f messages_example.txt
 """
 
 # Action constants
