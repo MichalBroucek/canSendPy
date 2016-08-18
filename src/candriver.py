@@ -16,8 +16,13 @@ class CanDriver:
 
     def __init__(self, can_channel):
         self.channel = can_channel
-        self.bus = can.interface.Bus(channel=can_channel, bustype='socketcan_native')
         self.msg = can.Message()
+
+        try:
+            self.bus = can.interface.Bus(channel=can_channel, bustype='socketcan_native')
+        except OSError:
+            self.bus = None
+            print('Error: No SocketCan device found!\nBus is not initialized!')
 
     def wait_for_one_msg(self, max_timeout_seconds):
         """

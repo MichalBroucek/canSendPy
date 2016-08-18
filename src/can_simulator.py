@@ -24,8 +24,8 @@ class CanSimulator:
         :return:
         """
         if self.param.action in param.LIST:
-            print('CanSimulator: print out list of devices ? - Not implemented yet!\n')
-            print(self.__list())
+            print('CanSimulator: print out device info')
+            self.__list()
         elif self.param.action in param.SEND_ONE_MSG:
             print('- Sending one message -')
             self.__send_one_msg(self.param.msg)
@@ -79,7 +79,16 @@ class CanSimulator:
         """
         List parameters for can interface
         """
-        return self.can_bus.bus.socket.__str__()
+        if self.can_bus.bus is None:
+            print('Error: No SocketCan device connected!')
+            return
+
+        dev_info = self.can_bus.bus.socket
+        if dev_info is None:
+            print('Error: No socket for can device available!')
+        else:
+            print(dev_info.__str__())
+        return
 
     def __send_one_msg(self, msg_to_send):
         """
