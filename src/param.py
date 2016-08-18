@@ -111,9 +111,9 @@ class Param:
             self.print_help()
             return None
 
-        if self.action is None:
-            print('Wrong parameter(s) or this functionality is not implemented yet.')
-            return None
+        # if self.action is None:
+        #     print('Wrong parameter(s) or this functionality is not implemented yet.')
+        #     return None
 
         return self
 
@@ -129,7 +129,6 @@ class Param:
         """
         if len(argv_list) != 9:
             print('Wrong number of parameters for building can Message from msgId and list of string bytes!')
-            self.print_help()
             return None
 
         msgid_int = int(argv_list[0], 16)
@@ -162,12 +161,10 @@ class Param:
         :param parameters: [action msg_id byte1 byte2 byte3 byte4 byte5 byte6 byte7 byte8]
         :return: Param() object
         """
-        if len(parameters) != 10:
-            print('Wrong number of parameters for sending one can message')
-            self.print_help()
-            return None
+        if not self.__is_right_nmb_of_parameters(parameters, 10,
+                                                 'Wrong number of parameters for sending one can message'):
+            self.action = None
 
-        self.action = parameters[0]
         self.msg = self.get_msg_from_argv_list(parameters[1:])
 
     def parse_multi_msg_param(self, parameters):
@@ -176,12 +173,10 @@ class Param:
         :param parameters:
         :return: Param() object
         """
-        if len(parameters) != 12:
-            print('Wrong number of parameters for sending one can message')
-            self.print_help()
-            return None
+        if not self.__is_right_nmb_of_parameters(parameters, 12,
+                                                 'Wrong number of parameters for sending one can message multiple times'):
+            self.action = None
 
-        self.action = parameters[0]
         self.nmb_msgs = self.__str_to_digit(parameters[1])
         self.delay_msg_ms = self.__str_to_digit(parameters[2])
         self.msg = self.get_msg_from_argv_list(parameters[3:])
@@ -192,9 +187,8 @@ class Param:
         :param parameters:
         :return: Param() object
         """
-        if len(parameters) != 1:
-            print('Wrong number of parameters for listing interface info!')
-            self.print_help()
+        if not self.__is_right_nmb_of_parameters(parameters, 1,
+                                                 'Wrong number of parameters for listing interface info!'):
             self.action = None
 
     def parse_file_messages(self, parameters):
@@ -203,9 +197,8 @@ class Param:
         :param parameters:
         :return: Param() object
         """
-        if len(parameters) != 2:
-            print('Wrong number of parameters for sending messages! from text file!')
-            self.print_help()
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters for sending messages! from text file!'):
             self.action = None
 
         self.file_name = parameters[1]
