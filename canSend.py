@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO:
-# Add unit tests for this tool!
-
 import sys
 from src import param
 from src import can_simulator

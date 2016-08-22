@@ -15,16 +15,13 @@ Requirement
 *Functionality*
 - Read one can message (timeout)
 - Read multiple can messages (timeout)
-- Wait for specific can message (timeout)
-- wait for Address Claim request - no collision
-- wait for Address Claim request - one collision
-- wait for Address Claim request - multiple collision
-- wait for Address Claim request - no addresses available
-- wait for new device Address Claim - no collision
-- wait for new device Address Claim - one collision
-- wait for new device Address Claim - multiple collision
-- wait for new device Address Claim - no addresses left
-- wait for VIN code request - VIN code single frame response
-- wait for VIN code request - VIN code multiple frame response
-- ...
+- Send one can message
+- Send one message multiple times
+- Send messages from text file
+- Wait for Address Claim request - no collision
+- Wait for Address Claim request - multiple collision
+- Wait for new device Address Claim - multiple collision
+- Wait for VIN code request - VIN code single frame response
+- Wait for VIN code request - VIN code multiple frame response
+- Simulate Engine RPM shift from one value to another value
 
