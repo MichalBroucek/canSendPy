@@ -96,7 +96,7 @@ class CanSimulator:
         :param msg_to_send can message to be sent
         """
         self.can_bus.send_one_msg(msg_to_send)
-        print(msg_to_send)
+        self.__print_msg(msg_to_send, received=False)
 
     def __send_multi_msg(self, nmb_msgs, delay_ms, msg_to_send):
         """
@@ -105,8 +105,8 @@ class CanSimulator:
         delay_seconds = self.__ms_to_seconds(delay_ms)
         print('Delay between messages: {0} [seconds]'.format(delay_seconds))
         for i in range(nmb_msgs):
+            self.__print_msg(msg_to_send, received=False)
             self.can_bus.send_one_msg(msg_to_send)
-            print(msg_to_send)
             time.sleep(delay_seconds)
 
     def __send_default_messages(self):
@@ -119,7 +119,7 @@ class CanSimulator:
 
         for msg in messages:
             self.can_bus.send_one_msg(msg)
-            print(msg)
+            self.__print_msg(msg, received=False)
             time.sleep(0.01)
 
     def __send_file_messages(self, file_name):
@@ -142,7 +142,7 @@ class CanSimulator:
         max_time_s = self.__ms_to_seconds(max_timeout_ms)
         print('Waiting for one can message for {0} seconds'.format(max_time_s))
         msg = self.can_bus.wait_for_one_msg(max_time_s)
-        print(msg)
+        self.__print_msg(msg)
 
     def __receive_multi_msg(self, max_timeout_ms):
         """
@@ -156,7 +156,7 @@ class CanSimulator:
             msg = self.can_bus.wait_for_one_msg(max_time_s)
             if msg is None:
                 break
-            print(msg)
+            self.__print_msg(msg)
 
     def __wait_for_addr_claim_no_collision(self, max_wait_time_ms):
         """
@@ -173,7 +173,7 @@ class CanSimulator:
 
             if msg is not None:
                 if self.__is_addr_claim_msg(msg.arbitration_id):
-                    print(msg)
+                    self.__print_msg(msg)
                     return msg
 
             actual_waiting_time = time.time() - start_time
@@ -190,6 +190,7 @@ class CanSimulator:
         MSG_ID_MASK = 0x00FF0000
         ADDR_CLAIM_MSG_ID = 0xEE
         masked_msg_id = (MSG_ID_MASK & arbitration_id) >> 16
+
         if masked_msg_id == ADDR_CLAIM_MSG_ID:
             return True
         else:
@@ -336,9 +337,8 @@ class CanSimulator:
             msg = self.can_bus.wait_for_one_msg(0.005)
 
             if msg is not None:
-                print(msg)
                 if self.__is_VIN_code_request_msg(msg):
-                    print(msg)
+                    self.__print_msg(msg)
                     return msg
 
             actual_waiting_time = time.time() - start_time
@@ -414,3 +414,17 @@ class CanSimulator:
 
         eec1_data = [0x00, 0x00, 0x00, rpm_lsb, rpm_msb, 0x00, 0x00, 0x00]
         return can.Message(arbitration_id=eec1_id, extended_id=True, data=eec1_data)
+
+    def __print_msg(self, msg, received=True):
+        """
+        Print message in cmd shell
+        '-->' ... means message was received
+        '<--' ... means message was sent
+        :param msg:
+        :param received:
+        :return:
+        """
+        if received:
+            print('--> ', msg)
+        else:
+            print('<-- ', msg)
