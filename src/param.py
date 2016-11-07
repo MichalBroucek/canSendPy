@@ -7,7 +7,7 @@ Usage: canSend.py [action] [par2 ... par10]
 
 Actions:
   -l --list                                                         Print list of connected devices with information about them.
-                                                                      Doesn't work on Linux!
+  -b --baudrate [baud_rate_speed]                                   Print or set can-bus baud rate (250000, 500000, 1000000).
   -s --send_one_message [msgId] [byte1] [byte2] ... [byte8]         Send one specific CAN message with 8 bytes of data.
   -S --send_message_multi [nmb_msg] [delay] [msgId] [byte1] [byte2] ... [byte8]   Send the same CAN message with 8 bytes of data multiple times.
   -f --send_file_messages [filename]                                Send messages defined in the text file. Format of file is:
@@ -25,6 +25,7 @@ Actions:
                                                                       Wait default (250ms) time for collisions. Generate [max_responses] Address Collisions.
   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
+  -eh --engine_hours [max_timeout]                                  Simulates (a hardcoded) engine hours response to an engine hours request message.
   -e --engine_rpm_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
   -h --help                                                         Print this help
 Examples:
@@ -34,6 +35,7 @@ Examples:
 
 # Action constants
 LIST = ("-l", "--list")
+BAUDRATE = ("-b", "--baudrate")
 SEND_ONE_MSG = ("-s", "--send_one_message")
 SEND_MSG_MULTI = ("-S", "--send_message_multi")
 SEND_FILE_MSG = ("-f", "--send_file_messages")
@@ -45,6 +47,7 @@ ADDR_CLAIM_ADDR_USED_MULTI = ("-aU", "--addr_claim_addr_used_multi")
 NEW_DEV_ADDR_USED_MULTI = ("-nU", "--new_device_addr_used_multi")
 VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
 VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
+ENGINE_HOURS = ("-eh", "--engine_hours")
 ENGINE_SHIFT = ("-e", "--engine_rpm_shift")
 HELP = ("-h", "--help")
 
@@ -66,6 +69,7 @@ class Param:
         self.rpm_value_2 = None
         self.value_1_ms = None
         self.value_2_ms = None
+        self.baudrate = None
 
     def parse_cmd_params(self, parameters):
         """
@@ -81,6 +85,8 @@ class Param:
 
         if parameters[1] in LIST:
             self.parse_interface_info_param(parameters[1:])
+        elif parameters[1] in BAUDRATE:
+            self.parse_baudrate_param(parameters[1:])
         elif parameters[1] in SEND_ONE_MSG:
             self.parse_one_msg_param(parameters[1:])
         elif parameters[1] in SEND_MSG_MULTI:
@@ -104,6 +110,8 @@ class Param:
             self.parse_vin_code_single(parameters[1:])
         elif parameters[1] in VIN_CODE_RESPONSE_MULTI:
             self.parse_vin_code_multi(parameters[1:])
+        elif parameters[1] in ENGINE_HOURS:
+            self.parse_engine_hours(parameters[1:])
         elif parameters[1] in ENGINE_SHIFT:
             self.parse_engine_shift(parameters[1:])
         else:
@@ -137,6 +145,20 @@ class Param:
         msg = can.Message(extended_id=True, arbitration_id=msgid_int, data=data_list_int)
         # print(msg)
         return msg
+
+    def parse_baudrate_param(self, argvs):
+        """
+        Get parameters for printing/setting can-bus baud rate
+        :param argvs: baud rate speed
+        :return:
+        """
+        if len(argvs) == 2 or len(argvs) == 1:
+            if len(argvs) == 2:
+                self.baudrate = self.__str_to_digit(argvs[1])
+        else:
+            print('Wrong number of parameters for printing/setting can-bus baud rate!')
+            self.print_help()
+            return None
 
     def get_msg_from_argvs(self, argvs):
         """
@@ -291,6 +313,18 @@ class Param:
         """
         if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate VIN code '
                                                                 'response as multi message!'):
+            self.action = None
+
+        self.__set_param_max_time(parameters)
+
+    def parse_engine_hours(self, parameters):
+        """
+        Parse parameters Engine hours
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to simulate Engine hours'):
             self.action = None
 
         self.__set_param_max_time(parameters)

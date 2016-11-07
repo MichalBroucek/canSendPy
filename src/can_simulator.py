@@ -1,6 +1,8 @@
 import time
 import can
+import subprocess
 
+import canSend
 from src import param
 from src import candriver
 from src import file_io
@@ -26,6 +28,13 @@ class CanSimulator:
         if self.param.action in param.LIST:
             print('CanSimulator: print out device info')
             self.__list()
+        elif self.param.action in param.BAUDRATE:
+            if self.param.baudrate is None:
+                print('- Printing actual baud rate -')
+                self.__print_actual_baudrate()
+            else:
+                print('- Setting actual baud rate -')
+                self.__set_baudrate(self.param.baudrate)
         elif self.param.action in param.SEND_ONE_MSG:
             print('- Sending one message -')
             self.__send_one_msg(self.param.msg)
@@ -64,6 +73,9 @@ class CanSimulator:
         elif self.param.action in param.VIN_CODE_RESPONSE_MULTI:
             print('- Simulate VIN code response as multi frame message -')
             self.__wait_and_reply_VIN_multi_frame(self.param.max_wait_time_ms)
+        elif self.param.action in param.ENGINE_HOURS:
+            print('- Simulate engine hours response -')
+            self.__wait_and_reply_engine_hours(self.param.max_wait_time_ms)
         elif self.param.action in param.ENGINE_SHIFT:
             print('- Simulate Engine shift from {0} RPM ({1} ms) to {2} RPM ({3} ms) -'.format(
                 self.param.rpm_value_1, self.param.value_1_ms, self.param.rpm_value_2,
@@ -89,6 +101,39 @@ class CanSimulator:
         else:
             print(dev_info.__str__())
         return
+
+    def __print_actual_baudrate(self):
+        """
+        Print actual baudrate via bash 'ip' command
+        # ip -details -statistics link show can0
+        :return:
+        """
+        stdoutdata = subprocess.getoutput("ip -details -statistics link show can0")
+        baudrate_str = stdoutdata.split('bitrate ')[1]
+        baudrate_str = baudrate_str.split(' ')[0]
+        print('Baud rate: {0}'.format(baudrate_str))
+
+    def __set_baudrate(self, baud_rate):
+        """
+        Set can-bus baud rate via bash 'ip' command
+        # sudo ip link set can0 down
+        # sudo ip link set can0 type can bitrate 500000
+        # sudo ip link set can0 up
+        :return:
+        """
+        response = subprocess.call(["sudo", "ip", "link", "set", canSend.can_interface, "down"])
+        if response != 0:
+            print("Error: Cannot deactivate '{0}' interface".format(canSend.can_interface))
+            print(response)
+        response = subprocess.call(["sudo", "ip", "link", "set", canSend.can_interface, "type", "can", "bitrate", str(baud_rate)])
+        if response != 0:
+            print("Error: Cannot set {0} baudrate for interface '{1}'".format(baud_rate, canSend.can_interface))
+            print(response)
+        response = subprocess.call(["sudo", "ip", "link", "set", canSend.can_interface, "up"])
+        if response != 0:
+            print("Error: Cannot eactivate '{0}' interface".format(canSend.can_interface))
+            print(response)
+        self.__print_actual_baudrate()
 
     def __send_one_msg(self, msg_to_send):
         """
@@ -216,6 +261,32 @@ class CanSimulator:
             requested_msg_id |= msg.data[0]  # 0xEC
 
             if requested_msg_id == VIN_CODE_MSG_ID:
+                return True
+            else:
+                return False
+        else:
+            False
+
+    @staticmethod
+    def __is_engine_hours_request_msg(msg):
+        """
+        Check if 'arbitration_id' from can-bus is 'engine hours request' message ID
+        :param msg_id:
+        :return:
+        """
+        assert isinstance(msg, can.Message)
+        MSG_ID_MASK = 0x00FF0000
+        REQUEST_MSG_ID = 0xEA  # J1939 Request message ID
+        ENGINE_HOURS_MSG_ID = 0xFEE5
+        requested_msg_id = 0  # J1939 msg ID which is requested from network
+        masked_msg_id = (MSG_ID_MASK & msg.arbitration_id) >> 16
+        if masked_msg_id == REQUEST_MSG_ID:
+
+            requested_msg_id |= msg.data[2] << 16
+            requested_msg_id |= msg.data[1] << 8
+            requested_msg_id |= msg.data[0]
+
+            if requested_msg_id == ENGINE_HOURS_MSG_ID:
                 return True
             else:
                 return False
@@ -353,14 +424,62 @@ class CanSimulator:
         """
         initial_frame_data = [0x20, 0x12, 0x00, 0x03, 0xFF, 0xEC, 0xFE, 0x00]
         initial_frame_msg = can.Message(arbitration_id=0x18ECFF01, extended_id=True, data=initial_frame_data)
-        msg1_data = [0x01, 0x56, 0x49, 0x4E, 0x31, 0x32, 0x33, 0x34]
+        msg1_data = [0x01, 53, 71, 90, 67, 90, 52, 51]
         msg1 = can.Message(arbitration_id=0x18EBFF01, extended_id=True, data=msg1_data)
-        msg2_data = [0x02, 0x35, 0x36, 0x37, 0x38, 0x39, 0x30, 0x31]
+        msg2_data = [0x02, 68, 49, 51, 83, 56, 49, 50]
         msg2 = can.Message(arbitration_id=0x18EBFF01, extended_id=True, data=msg2_data)
-        msg3_data = [0x03, 0x32, 0x33, 0x34, 0x2A, 0xFF, 0xFF, 0xFF]
+        msg3_data = [0x03, 55, 49, 53, 42, 0xFF, 0xFF, 0xFF]
         msg3 = can.Message(arbitration_id=0x18EBFF01, extended_id=True, data=msg3_data)
 
         return [initial_frame_msg, msg1, msg2, msg3]
+
+    @staticmethod
+    def __get_engine_hours_message():
+        """
+        Generate engine hours message
+        :return:
+        """
+        msg_data = [0x64, 0x05, 0x01, 0x00, 0x1B, 0xF2, 0x03, 0x00]
+        engine_hours_msg = can.Message(arbitration_id=0x18FEE501, extended_id=True, data=msg_data)
+        return engine_hours_msg
+
+    def __wait_for_engine_hours_request(self, max_wait_time_ms):
+        """
+        Wait max. time for one engine hours request message
+        :param max_wait_time_ms:
+        :return:
+        """
+        max_time_s = self.__ms_to_seconds(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        while actual_waiting_time <= max_time_s:
+            # msg = self.can_bus.get_one_msg()
+            msg = self.can_bus.wait_for_one_msg(0.005)
+
+            if msg is not None:
+                if self.__is_engine_hours_request_msg(msg):
+                    self.__print_msg(msg)
+                    return msg
+
+            actual_waiting_time = time.time() - start_time
+
+        return None
+
+    def __wait_and_reply_engine_hours(self, max_wait_time_ms):
+        """
+        Wait max. time for engine hours request and reply with engine hours message
+        :param max_wait_time_ms:
+        :return:
+        """
+        msg = self.__wait_for_engine_hours_request(max_wait_time_ms)
+
+        if msg is None:
+            print('No \'Engine hours\' request received in {0} seconds'.format(self.__ms_to_seconds(max_wait_time_ms)))
+            return
+
+        # Build and send engine hours message
+        self.__send_one_msg(self.__get_engine_hours_message())
 
     def __simulate_rpm_shift(self, rpm_1_value, rpm_1_time_ms, rpm_2_value, rpm_2_time_ms):
         """
