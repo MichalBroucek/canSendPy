@@ -6,6 +6,8 @@ import canSend
 from src import param
 from src import candriver
 from src import file_io
+from src.eld_simulation import ELD_simulation
+from src.eld_msg_group import ELD_msg_group
 
 
 class CanSimulator:
@@ -37,7 +39,7 @@ class CanSimulator:
                 self.__set_baudrate(self.param.baudrate)
         elif self.param.action in param.SEND_ONE_MSG:
             print('- Sending one message -')
-            self.__send_one_msg(self.param.msg)
+            self.__send_one_msg(self.param.msg, print_msg_flag=True)
         elif self.param.action in param.SEND_MSG_MULTI:
             print('- Sending multiple times one message with specific delay -')
             self.__send_multi_msg(self.param.nmb_msgs, self.param.delay_msg_ms, self.param.msg)
@@ -57,15 +59,16 @@ class CanSimulator:
             print('- Wait for one Address Claim request and send no response -')
             max_wait_s = self.__ms_to_seconds(self.param.max_wait_time_ms)
             print('Waiting {0} seconds for one \'Address claim\' request message'.format(max_wait_s))
-            self.__wait_for_addr_claim_no_collision(self.param.max_wait_time_ms)
+            self.__wait_for_addr_claim_no_collision_continuous(self.param.max_wait_time_ms)
         elif self.param.action in param.ADDR_CLAIM_ADDR_USED_MULTI:
             print('- Wait for Address Claim requests and simulate multiple address collisions -')
-            collision_count = self.__wait_for_addr_claim_multi_collisions(self.param.max_wait_time_ms,
-                                                                          self.param.nmb_msgs)
+            collision_count = self.__wait_for_addr_claim_multi_collisions_continuous(self.param.max_wait_time_ms,
+                                                                                     self.param.nmb_msgs)
             print('Address Claim collisions count: {0}'.format(collision_count))
         elif self.param.action in param.NEW_DEV_ADDR_USED_MULTI:
             print('- Connect new device on can-bus and cause multiple address collisions -')
-            collision_count = self.__connect_new_device_addr_collisions(self.param.nmb_msgs)
+            collision_count = self.__new_device_addr_collisions_multi_continuous(self.param.max_wait_time_ms,
+                                                                                 self.param.nmb_msgs)
             print('Address Claim collisions count: {0}'.format(collision_count))
         elif self.param.action in param.VIN_CODE_RESPONSE:
             print('- Wait for VIN code request and simulate VIN code response as single frame message -')
@@ -82,6 +85,22 @@ class CanSimulator:
                 self.param.value_2_ms))
             self.__simulate_rpm_shift(self.param.rpm_value_1, self.param.value_1_ms, self.param.rpm_value_2,
                                       self.param.value_2_ms)
+        elif self.param.action in param.INSTALL_WIZARD_VIN:
+            print('- Wait for VIN code request and simulate VIN code response when broadcasting F004 (Engine r.p.m.) '
+                  'message -')
+            self.__broadcast_and_reply_VIN_multi_frame(self.param.max_wait_time_ms)
+        elif self.param.action in param.ELD_MSGS_SIMULATION:
+            print(
+                '- Simulating ELD messages (Speed, Engine r.p.m., Distance, Engine hours (on request), '
+                'VIN code (on request) ) -')
+            self.__eld_simulation_default(self.param.max_wait_time_ms)
+        elif self.param.action in param.ELD_MSGS_FILE_SIMULATION:
+            print('- Simulating ELD messages specified in text file -')
+            self.__eld_file_simulation(self.param.file_name)
+        elif self.param.action in param.SPEED_SHIFT:
+            print('- Simulating Vehicle Speed Shift -')
+            self.__simulate_speed_shift(self.param.speed_value1, self.param.value_1_ms, self.param.speed_value2,
+                                        self.param.value_2_ms)
         else:
             print('Unknown action')
             print('Exit')
@@ -125,7 +144,8 @@ class CanSimulator:
         if response != 0:
             print("Error: Cannot deactivate '{0}' interface".format(canSend.can_interface))
             print(response)
-        response = subprocess.call(["sudo", "ip", "link", "set", canSend.can_interface, "type", "can", "bitrate", str(baud_rate)])
+        response = subprocess.call(
+            ["sudo", "ip", "link", "set", canSend.can_interface, "type", "can", "bitrate", str(baud_rate)])
         if response != 0:
             print("Error: Cannot set {0} baudrate for interface '{1}'".format(baud_rate, canSend.can_interface))
             print(response)
@@ -135,13 +155,21 @@ class CanSimulator:
             print(response)
         self.__print_actual_baudrate()
 
-    def __send_one_msg(self, msg_to_send):
+    def __send_one_msg(self, msg_to_send, print_msg_flag=False):
         """
         Send one message action
         :param msg_to_send can message to be sent
         """
         self.can_bus.send_one_msg(msg_to_send)
-        self.__print_msg(msg_to_send, received=False)
+        if print_msg_flag:
+            self.__print_msg(msg_to_send, received=False)
+
+    def __send_one_msg_no_printout(self, msg_to_send):
+        """
+        Send one message action
+        :param msg_to_send can message to be sent
+        """
+        self.can_bus.send_one_msg(msg_to_send)
 
     def __send_multi_msg(self, nmb_msgs, delay_ms, msg_to_send):
         """
@@ -196,14 +224,18 @@ class CanSimulator:
         :return:
         """
         max_time_s = self.__ms_to_seconds(max_timeout_ms)
-        print('Waiting for multiple can messages maximum for {0} seconds'.format(max_time_s))
-        while True:
-            msg = self.can_bus.wait_for_one_msg(max_time_s)
-            if msg is None:
-                break
-            self.__print_msg(msg)
+        actual_waiting_time = 0
+        start_time = time.time()
+        while actual_waiting_time <= max_time_s:
+            msg = self.can_bus.wait_for_one_msg(0.05)
 
-    def __wait_for_addr_claim_no_collision(self, max_wait_time_ms):
+            if msg is not None:
+                if self.__is_addr_claim_msg(msg.arbitration_id):
+                    self.__print_msg(msg)
+
+            actual_waiting_time = time.time() - start_time
+
+    def __wait_for_addr_claim(self, max_wait_time_ms):
         """
         Wait max. time for one Address claim request
         :param max_wait_time_ms:
@@ -213,8 +245,13 @@ class CanSimulator:
         start_time = time.time()
         actual_waiting_time = 0.0
 
+        description = "ELD broadcast msgs for Address claim simulation"
+        msg_group = ELD_msg_group(description, 10, 600, 10500, 1000, None, None)
+
         while actual_waiting_time <= max_time_s:
-            msg = self.can_bus.get_one_msg()
+            # J1939 messages need to be broadcast for Address claim Ehubo2 mechanism
+            self.__send_eld_broadcast_mesages(msg_group)
+            msg = self.can_bus.wait_for_one_msg(0.05)
 
             if msg is not None:
                 if self.__is_addr_claim_msg(msg.arbitration_id):
@@ -224,6 +261,75 @@ class CanSimulator:
             actual_waiting_time = time.time() - start_time
 
         return None
+
+    def __wait_for_addr_claim_no_collision_continuous(self, max_wait_time_ms):
+        """
+        Wait max. time for one Address claim requests
+        :param max_wait_time_ms:
+        :return:
+        """
+        max_time_s = self.__ms_to_seconds(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        description = "ELD broadcast msgs for Address claim simulation"
+        msg_group = ELD_msg_group(description, 10, 600, 10500, 1000, None, None)
+
+        while actual_waiting_time <= max_time_s:
+            # J1939 messages need to be broadcast for Address claim Ehubo2 mechanism
+            self.__send_eld_broadcast_mesages(msg_group)
+            msg = self.can_bus.wait_for_one_msg(0.05)
+
+            if msg is not None:
+                if self.__is_addr_claim_msg(msg.arbitration_id):
+                    self.__print_msg(msg)
+
+            actual_waiting_time = time.time() - start_time
+
+        return None
+
+    def __wait_for_addr_claim_multi_collisions_continuous(self, max_wait_time_ms, nmb_collisions):
+        """
+        Wait max. time for one Address claim requests and simulate address collisions
+        :param max_wait_time_ms:
+        :param nmb_collisions:
+        :return:
+        """
+        max_time_s = self.__ms_to_seconds(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        # Generate can-bus ELD messages for establishing ecm_link connection
+        description = "ELD broadcast msgs for Address claim simulation"
+        msg_group = ELD_msg_group(description, 10, 600, 10500, 1000, None, None)
+
+        # Needs to be higher priority (= smaller number) than Gen2 NAME (which is based on Serial number): 0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x10
+        data_to_send = [0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03]
+        # Needs to send back with the same msg ID to create Address Collision
+        max_addr_claim_response_delay_ms = 500  # 250ms request + 250ms response TODO: 250 or 500 ? If works with 250 keep 250ms
+        actual_collisions_count = 0
+
+        while actual_waiting_time <= max_time_s:
+            # J1939 messages need to be broadcast for Address claim Ehubo2 mechanism
+            self.__send_eld_broadcast_mesages(msg_group)
+
+            msg = self.can_bus.wait_for_one_msg(0.05)  # Wait/Read Address request from Ehubo2
+
+            if msg is not None:
+                if self.__is_addr_claim_msg(msg.arbitration_id):
+                    self.__print_msg(msg)
+                    if actual_collisions_count < nmb_collisions:
+                        # Generate Address Collision J1939 message and send it into can-bus
+                        addr_collision_response = can.Message(arbitration_id=msg.arbitration_id, extended_id=True,
+                                                              data=data_to_send)
+                        self.__send_one_msg(addr_collision_response, print_msg_flag=True)
+                        actual_collisions_count += 1
+                    else:
+                        pass
+
+            actual_waiting_time = time.time() - start_time
+
+        return actual_collisions_count
 
     @staticmethod
     def __is_addr_claim_msg(arbitration_id):
@@ -242,7 +348,7 @@ class CanSimulator:
             False
 
     @staticmethod
-    def __is_VIN_code_request_msg(msg):
+    def is_VIN_code_request_msg(msg):
         """
         Check if 'arbitration_id' from can-bus is 'VIN code request' message ID
         :param msg_id:
@@ -264,6 +370,27 @@ class CanSimulator:
                 return True
             else:
                 return False
+        else:
+            False
+
+    @staticmethod
+    def is_engine_hours_request_msg(msg):
+        """
+        Check if 'arbitration_id' from can-bus is 'Engine hours' message ID
+        :param msg_id:
+        :return:
+        """
+        assert isinstance(msg, can.Message)
+        MSG_ID_MASK = 0x00FF0000
+        REQUEST_MSG_ID = 0xEA  # J1939 Request message ID
+        ENGINE_HOURS_MSG_ID = 0xFEE5
+        requested_msg_id = 0  # J1939 msg ID which is requested from network
+        masked_msg_id = (MSG_ID_MASK & msg.arbitration_id) >> 16
+        if masked_msg_id == REQUEST_MSG_ID:
+            requested_msg_id |= msg.data[2] << 16  # 0x00
+            requested_msg_id |= msg.data[1] << 8  # 0xFE
+            requested_msg_id |= msg.data[0]  # 0xEC
+            return requested_msg_id == ENGINE_HOURS_MSG_ID
         else:
             False
 
@@ -293,36 +420,25 @@ class CanSimulator:
         else:
             False
 
-    def __wait_for_addr_claim_multi_collisions(self, max_wait_time_ms, nmb_collisions):
+    def __wait_for_one_addr_claim(self, max_wait_time_s):
         """
-        Wait for 'Address Claim' request and generate/send nmb_msgs Address collisions
-        :param max_wait_time_ms:
-        :param nmb_collisions:
+        Wait for one 'Address Claim' request
+        :param max_wait_time_s:
         :return:
         """
-        msg = self.__wait_for_addr_claim_no_collision(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+        while actual_waiting_time <= max_wait_time_s:
+            msg = self.can_bus.wait_for_one_msg(0.05)
 
-        if msg is None:
-            print('Timeout expired for first \'Address claim\' request')
-            return
+            if msg is not None:
+                if self.__is_addr_claim_msg(msg.arbitration_id):
+                    self.__print_msg(msg)
+                    return msg
 
-        # Needs to be higher priority (= smaller number) than Gen2 NAME: 0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x10
-        data_to_send = [0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x0f]
-        # Needs to send back with the same msg ID to create Address Collision
-        max_addr_claim_response_delay_ms = 500  # 250ms request + 250ms response TODO: 250 or 500 ? If works with 250 keep 250ms
+            actual_waiting_time = time.time() - start_time
 
-        actual_collisions_count = 0
-        while actual_collisions_count < nmb_collisions:
-            addr_collision_response = can.Message(arbitration_id=msg.arbitration_id, extended_id=True,
-                                                  data=data_to_send)
-            self.__send_one_msg(addr_collision_response)
-            actual_collisions_count += 1
-
-            msg = self.__wait_for_addr_claim_no_collision(max_addr_claim_response_delay_ms)
-            if msg is None:
-                break
-
-        return actual_collisions_count;
+        return None
 
     @staticmethod
     def __ms_to_seconds(ms_time):
@@ -333,22 +449,69 @@ class CanSimulator:
         """
         return ms_time / 1000.0
 
-    def __connect_new_device_addr_collisions(self, nmb_collisions):
+    @staticmethod
+    def __get_addr_claim_req_msg(msg_arbitration_id):
         """
-        Simulate new device on can-bus which tries to use the same Address as default Ehubo2 address
+        Return Address claim request for specific Address
+        Address claim ID = EEFFxx + Default Ehubo2 Address is 0xFB (251 dec)
+        :param addr: Address which we want to claim
+        :return:
+        """
+        # Data need to have higher priority (= smaller number) than Gen2 NAME: 0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x10
+        data_to_send = [0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03]
+        return can.Message(arbitration_id=msg_arbitration_id, extended_id=True, data=data_to_send)
+
+    def __new_device_addr_collisions_multi_continuous(self, max_wait_time_ms, nmb_collisions):
+        """
+        Simulate new device on can-bus which tries to use the same Address as Ehubo2 address
+        - Start with default Ehubo2 address = 0xfb (251)
+        - Simulate ELD broadcast messages to re-establish ecm_link connection (Speed, Engine r.p.m., Distance)
+        - Generate multiple address claim collisions from new device on can-bus
+        - complete on timeout
         :param max_wait_time_ms:
         :param nmb_collisions:
         :return:
         """
-        # Address claim ID = EEFFxx + Default Ehubo2 Address is 0xFB (251 dec)
-        addr_claim_msg_id = 0x18EEFFFB
-        # Data needs to have higher priority (= smaller number) than Gen2 NAME: 0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x10
-        data_to_send = [0x00, 0x00, 0x40, 0x32, 0x00, 0xff, 0x02, 0x0f]
-        max_response_waittime_ms = 250
-        new_addr_request = can.Message(arbitration_id=addr_claim_msg_id, extended_id=True, data=data_to_send)
-        self.__send_one_msg(new_addr_request)
-        collision_count = self.__wait_for_addr_claim_multi_collisions(max_response_waittime_ms, nmb_collisions)
-        return collision_count + 1  # + 1 first initial request from new device
+        DELAY_FOR_ECM_LINK_S = 2  # provide Ehubo2 time to re-establish ecm_link
+
+        max_time_s = self.__ms_to_seconds(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        # Generate can-bus ELD messages for establishing ecm_link connection
+        description = "ELD broadcast msgs for Address claim simulation"
+        msg_group = ELD_msg_group(description, 10, 600, 10500, 1000, None, None)
+
+        initial_request = True
+        actual_collisions_count = 0
+        while actual_waiting_time <= max_time_s:
+
+            self.__send_eld_broadcast_mesages(msg_group)    # Broadcast messages required by ELD
+            if actual_collisions_count < nmb_collisions:
+                if actual_waiting_time > DELAY_FOR_ECM_LINK_S:  # Provide Ehubo2 enough time to re-establish ecm_link
+                    if initial_request:
+                        # Default Ehubo2 address is 0xfb -> default arbitration_id = 0x18eefffb
+                        self.__send_one_msg(self.__get_addr_claim_req_msg(0x18eefffb), print_msg_flag=True)
+                        initial_request = False
+
+                    addr_claim_msg = self.__wait_for_one_addr_claim(0.5)
+
+                    if addr_claim_msg is not None:
+                        if self.__is_addr_claim_msg(addr_claim_msg.arbitration_id):
+                            # Generate next collision here
+                            self.__send_one_msg(self.__get_addr_claim_req_msg(addr_claim_msg.arbitration_id),
+                                                print_msg_flag=True)
+                            actual_collisions_count += 1
+
+                else:
+                    time.sleep(0.05)
+
+            else:
+                time.sleep(0.05)
+
+            actual_waiting_time = time.time() - start_time
+
+        return actual_collisions_count
 
     def __wait_and_reply_VIN_single_frame(self, max_wait_time_ms):
         """
@@ -390,8 +553,113 @@ class CanSimulator:
         # Build and send VIN code message as multi-frame can message
         vin_code_multi_messages = self.__get_VIN_code_multi_frame()
         for can_frame in vin_code_multi_messages:
-            self.__send_one_msg(can_frame)
+            self.__send_one_msg(can_frame, print_msg_flag=True)
             time.sleep(0.050)  # According J1939 std. multi frame messages with 50ms time delay
+
+    def __broadcast_and_reply_VIN_multi_frame(self, max_wait_time_ms):
+        """
+        Broadcast F004 message and response on VIN code request for Install wizard test
+        """
+        actual_wait_time = 0
+        start_time = time.time() * 1000
+
+        while actual_wait_time < max_wait_time_ms:
+            rpm_msg = self.get_EEC1_message(2000)
+            self.__send_one_msg(rpm_msg, print_msg_flag=True)
+            msg = self.__wait_for_VIN_code_request(100)
+            actual_wait_time = time.time() * 1000 - start_time
+
+            if msg is None:
+                print('No \'VIN code\' request received in {0} seconds'.format(self.__ms_to_seconds(max_wait_time_ms)))
+                continue
+
+            # Build and send VIN code message as multi-frame can message
+            vin_code_multi_messages = self.__get_VIN_code_multi_frame()
+            for can_frame in vin_code_multi_messages:
+                self.__send_one_msg(can_frame, print_msg_flag=True)
+                time.sleep(0.050)  # According J1939 std. multi frame messages with 50ms time delay
+
+        print("- Simulation for Install wizard completed. -")
+
+    def __eld_simulation_default(self, max_wait_time_ms):
+        """
+        Perform truck simulation for truck
+        - keep sending broadcast messages: Speed, Engine speed, Vehicle distance
+        - response on request messages: Engine hours and VIN code
+        :param max_wait_time_ms:
+        :return:
+        """
+        description = "Default ELD simulation"
+        msg_group = ELD_msg_group(description, 10, 600, 10500, 1000, None, max_wait_time_ms / 1000)
+        ccvs = self.get_CCVS1_message(msg_group.vehicle_speed)
+        eec1 = self.get_EEC1_message(msg_group.engine_speed)
+        vdhr = self.get_VDHR_message(msg_group.vehicle_distance)
+        hours = self.get_HOURS_message(msg_group.engine_hours)
+
+        print("\nSimulating: Default ELD messages for {0} seconds\n".format(msg_group.duration))
+        msg_group.print()
+        print('...\n')
+
+        self.__run_eld_file_simulation(msg_group.duration, ccvs, eec1, vdhr, hours, False)
+        print("- Simulation for ELD completed. -")
+
+    def __eld_file_simulation(self, file_name):
+        """
+        Perform truck simulation for ELD test procedure - simulation specified in text file
+        - keep sending broadcast messages: Speed, Engine speed, Vehicle distance
+        - response on request messages: Engine hours and VIN code
+        :param max_wait_time_ms:
+        :return:
+        """
+        eld_simulation = ELD_simulation(file_name)
+        eld_simulation.print_simulation_sequence()
+
+        for msg_group in eld_simulation.msg_group_list:
+            # Iterate over all message group
+            print("\nSimulating: {0}\n".format(msg_group.description))
+            msg_group.print()
+            print('...\n')
+
+            ccvs = self.get_CCVS1_message(msg_group.vehicle_speed)
+            eec1 = self.get_EEC1_message(msg_group.engine_speed)
+            vdhr = self.get_VDHR_message(msg_group.vehicle_distance)
+            hours = self.get_HOURS_message(msg_group.engine_hours)
+
+            self.__run_eld_file_simulation(msg_group.duration, ccvs, eec1, vdhr, hours, False)
+        print("- Simulation for ELD completed. -")
+
+    def __run_eld_file_simulation(self, max_duration_s, ccvs, eec1, vdhr, hours, print_out_msg_flag=False):
+        """
+        Simulate J1939 messages for ELD behavior
+        :return:
+        """
+        actual_duration_time = 0
+        start_time = time.time()
+
+        # Simulate one message group for specific duration time
+        while (time.time() - start_time) < max_duration_s:
+            self.__send_one_msg(eec1, print_out_msg_flag)
+            self.__send_one_msg(ccvs, print_out_msg_flag)
+            self.__send_one_msg(vdhr, print_out_msg_flag)
+
+            msg = self.__wait_for_VIN_or_engine_hours_request(100)
+
+            if msg is None:
+                # print('No \'VIN code\' or \'Engine hours\' request received in {0} seconds'.format(
+                #     self.__ms_to_seconds(max_wait_time_ms)))
+                continue
+
+            if self.is_VIN_code_request_msg(msg):
+                # Build and send VIN code message as multi-frame can message
+                vin_code_multi_messages = self.__get_VIN_code_multi_frame()
+                for can_frame in vin_code_multi_messages:
+                    print('VIN code request received - sending response now')
+                    self.__send_one_msg(can_frame)
+                    time.sleep(0.050)  # According J1939 std. multi frame messages with 50ms time delay
+
+            if self.is_engine_hours_request_msg(msg):
+                print('Engine Hours request received - sending response now')
+                self.__send_one_msg(hours)
 
     def __wait_for_VIN_code_request(self, max_wait_time_ms):
         """
@@ -408,9 +676,37 @@ class CanSimulator:
             msg = self.can_bus.wait_for_one_msg(0.005)
 
             if msg is not None:
-                if self.__is_VIN_code_request_msg(msg):
+                if self.is_VIN_code_request_msg(msg):
                     self.__print_msg(msg)
                     return msg
+
+            actual_waiting_time = time.time() - start_time
+
+        return None
+
+    def __wait_for_VIN_or_engine_hours_request(self, max_wait_time_ms):
+        """
+        Wait max. time for one VIN code or Engine Hours request message
+        :param max_wait_time_ms:
+        :return:
+        """
+        max_time_s = self.__ms_to_seconds(max_wait_time_ms)
+        start_time = time.time()
+        actual_waiting_time = 0.0
+
+        while actual_waiting_time <= max_time_s:
+            # msg = self.can_bus.get_one_msg()
+            msg = self.can_bus.wait_for_one_msg(0.005)
+
+            if msg is not None:
+                if self.is_VIN_code_request_msg(msg):
+                    self.__print_msg(msg)
+                    return msg
+                elif self.is_engine_hours_request_msg(msg):
+                    self.__print_msg(msg)
+                    return msg
+                else:
+                    pass
 
             actual_waiting_time = time.time() - start_time
 
@@ -458,7 +754,7 @@ class CanSimulator:
             msg = self.can_bus.wait_for_one_msg(0.005)
 
             if msg is not None:
-                if self.__is_engine_hours_request_msg(msg):
+                if self.is_engine_hours_request_msg(msg):
                     self.__print_msg(msg)
                     return msg
 
@@ -479,14 +775,14 @@ class CanSimulator:
             return
 
         # Build and send engine hours message
-        self.__send_one_msg(self.__get_engine_hours_message())
+        self.__send_one_msg(self.__get_engine_hours_message(), print_msg_flag=True)
 
     def __simulate_rpm_shift(self, rpm_1_value, rpm_1_time_ms, rpm_2_value, rpm_2_time_ms):
         """
         Simulate Engine shift from one RPM value to second RPM value for specified time
         """
-        rpm_msg_1 = self.__get_EEC1_message(rpm_1_value)  # RPM signal is sent inside EEC1 J1939 message
-        rpm_msg_2 = self.__get_EEC1_message(rpm_2_value)
+        rpm_msg_1 = self.get_EEC1_message(rpm_1_value)  # RPM signal is sent inside EEC1 J1939 message
+        rpm_msg_2 = self.get_EEC1_message(rpm_2_value)
         rpm_1_time_s = self.__ms_to_seconds(rpm_1_time_ms)
         rpm_2_time_s = self.__ms_to_seconds(rpm_2_time_ms)
 
@@ -494,6 +790,20 @@ class CanSimulator:
         self.__keep_sending_message_for_max_time(rpm_msg_1, 20, rpm_1_time_ms)  # Cycle time 20ms (see J1939 std.)
         print('Sending RPM value: {0} for {1} second(s)'.format(rpm_2_value, rpm_2_time_s))
         self.__keep_sending_message_for_max_time(rpm_msg_2, 20, rpm_2_time_ms)  # Cycle time 20ms (see J1939 std.)
+
+    def __simulate_speed_shift(self, kph_1_value, speed_1_time_ms, kph_2_value, speed_2_time_ms):
+        """
+        Simulate Vehicle Speed shift from one kph value to second kph value for specified time [ms]
+        """
+        kph_msg_1 = self.get_CCVS1_message(kph_1_value)  # Vehicle Speed signal is sent inside CCVS1 J1939 message
+        kph_msg_2 = self.get_CCVS1_message(kph_2_value)
+        kph_1_time_s = self.__ms_to_seconds(speed_1_time_ms)
+        kph_2_time_s = self.__ms_to_seconds(speed_2_time_ms)
+
+        print('Sending Vehicle Speed value: {0} for {1} second(s)'.format(kph_1_value, kph_1_time_s))
+        self.__keep_sending_message_for_max_time(kph_msg_1, 100, speed_1_time_ms)  # Cycle time 100ms (see J1939 std.)
+        print('Sending Vehicle Speed value: {0} for {1} second(s)'.format(kph_2_value, kph_2_time_s))
+        self.__keep_sending_message_for_max_time(kph_msg_2, 100, speed_2_time_ms)  # Cycle time 100ms (see J1939 std.)
 
     def __keep_sending_message_for_max_time(self, msg_to_send, delay_ms, timeout_ms):
         """
@@ -510,12 +820,25 @@ class CanSimulator:
 
         if msg_to_send is not None:
             while actual_waiting_time <= timeout_seconds:
-                self.__send_one_msg(msg_to_send)
+                self.__send_one_msg(msg_to_send, print_msg_flag=False)
                 time.sleep(delay_seconds)
                 actual_waiting_time = time.time() - start_time
 
+    def __send_eld_broadcast_mesages(self, msg_group, print_out=False):
+        """
+        Send broadcast ELD messages
+        :param msg_group:
+        :return:
+        """
+        ccvs = self.get_CCVS1_message(msg_group.vehicle_speed)
+        eec1 = self.get_EEC1_message(msg_group.engine_speed)
+        vdhr = self.get_VDHR_message(msg_group.vehicle_distance)
+        self.__send_one_msg(ccvs, print_out)
+        self.__send_one_msg(eec1, print_out)
+        self.__send_one_msg(vdhr, print_out)
+
     @staticmethod
-    def __get_EEC1_message(rpm_value):
+    def get_EEC1_message(rpm_value):
         """
         Get J1939 EEC1 message with specific RPM value
         :return:
@@ -533,6 +856,71 @@ class CanSimulator:
 
         eec1_data = [0x00, 0x00, 0x00, rpm_lsb, rpm_msb, 0x00, 0x00, 0x00]
         return can.Message(arbitration_id=eec1_id, extended_id=True, data=eec1_data)
+
+    @staticmethod
+    def get_CCVS1_message(speed_kmh):
+        """
+        Get J1939 CCVS message with specific vehicle speed value
+        :return:
+        """
+        ccvs_id = 0x18FEF101
+        speed_lsb = speed_msb = 0
+
+        try:
+            raw_speed_value = int(round(speed_kmh * 256))  # See J1939 std. CCVS message: 1/256 km/h per bit gain
+            speed_lsb = raw_speed_value & 0x00FF
+            speed_msb = (raw_speed_value & 0xFF00) >> 8
+        except ValueError:
+            print('Error: Cannot convert physical RPM value into raw value for EEC1 message')
+            return None
+
+        ccvs_data = [0x00, speed_lsb, speed_msb, 0x00, 0x00, 0x00, 0x00, 0x00]
+        return can.Message(arbitration_id=ccvs_id, extended_id=True, data=ccvs_data)
+
+    @staticmethod
+    def get_VDHR_message(vehicle_distance_meters):
+        """
+        Get J1939 VDHR (Vehicle Distance High Resolution) message with specific distance value (in meters)
+        :param vehicle_distance:
+        :return:
+        """
+        vdhr_id = 0x18FEC101
+        byte1 = byte2 = byte3 = byte4 = 0  # byte1 = lsb; byte4 = msb
+
+        try:
+            raw_distance_value = int(round(vehicle_distance_meters / 5))  # See J1939 std. VDHR message: 5m per bit gain
+            byte1 = raw_distance_value & 0x000000FF
+            byte2 = (raw_distance_value & 0x0000FF00) >> 8
+            byte3 = (raw_distance_value & 0x00FF0000) >> 16
+            byte4 = (raw_distance_value & 0xFF000000) >> 24
+        except ValueError:
+            print('Error: Cannot convert physical RPM value into raw value for EEC1 message')
+            return None
+
+        vdhr_data = [byte1, byte2, byte3, byte4, 0x00, 0x00, 0x00, 0x00]
+        return can.Message(arbitration_id=vdhr_id, extended_id=True, data=vdhr_data)
+
+    @staticmethod
+    def get_HOURS_message(engine_hours):
+        """
+        Get J1939 Engine Hours message with specific hours value
+        :return:
+        """
+        hours_id = 0x18FEE501
+        byte1 = byte2 = byte3 = byte4 = 0  # byte1 = lsb; byte4 = msb
+
+        try:
+            raw_hours_value = int(round(engine_hours / 0.05))  # See J1939 std. HOURS message: 0.05 H per bit gain
+            byte1 = raw_hours_value & 0x000000FF
+            byte2 = (raw_hours_value & 0x0000FF00) >> 8
+            byte3 = (raw_hours_value & 0x00FF0000) >> 16
+            byte4 = (raw_hours_value & 0xFF000000) >> 24
+        except ValueError:
+            print('Error: Cannot convert physical RPM value into raw value for EEC1 message')
+            return None
+
+        hours_data = [byte1, byte2, byte3, byte4, 0x00, 0x00, 0x00, 0x00]
+        return can.Message(arbitration_id=hours_id, extended_id=True, data=hours_data)
 
     def __print_msg(self, msg, received=True):
         """

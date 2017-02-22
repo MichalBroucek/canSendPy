@@ -21,12 +21,16 @@ Actions:
   -R --receive_messages       [max_timeout]                         Wait [ms] for all messages for specific number of milliseconds.
   -an --addr_claim_no_response [max_timeout]                        Wait [ms] for 'Address claim message' send no response (address can be used).
   -aU --addr_claim_addr_used_multi [max_timeout] [max_responses]    Wait max [ms] for 'Address claim' and response by [max_responses] nmb. of Addr. Claimed msgs.
-  -nU --new_device_addr_used_multi [max_responses]                  Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
+  -nU --new_device_addr_used_multi [max_timeout] [max_responses]    Initiate new 'Address claim' with the default (FB) addr. as Ehubo2.
                                                                       Wait default (250ms) time for collisions. Generate [max_responses] Address Collisions.
   -v --vin_code_response       [max_timeout]                        Wait for VIN code request and send VIN code as single message back.
   -V --vin_code_response_multi [max_timeout]                        Wait for VIN code request and send VIN code as multi frame message back.
   -eh --engine_hours [max_timeout]                                  Simulates (a hardcoded) engine hours response to an engine hours request message.
-  -e --engine_rpm_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]  Simulate Engine RPM shift from one value to another value.
+  -e --engine_rpm_shift [rpm_value1] [value1_ms] [rpm_value2] [value2_ms]    Simulate Engine RPM shift from one value to another value.
+  -sp --speed_kph_shift [speed_value1] [value_ms] [speed_value2] [value2_ms] Simulate Vehicle Speed shift from one value to another value.
+  -iV --install_wizard_vin [max_timeout]                            Broadcast R.P.M. message and response on VIN code request for Install Wizard test.
+  -eld --eld_messages_simulation [max_timeout]                      Simulate truck for ELD (Vehicle Speed, Engine speed, Vehicle distance, VIN code, Engine hours).
+  -eld_file --eld_msgs_file_simulation [filename]                   Simulate truck behavior for ELD with values specified in text file.
   -h --help                                                         Print this help
 Examples:
     canSend.py -s 18FEF100 01 02 03 04 05 06 07 08
@@ -49,6 +53,10 @@ VIN_CODE_RESPONSE = ("-v", "--vin_code_response")
 VIN_CODE_RESPONSE_MULTI = ("-V", "--vin_code_response_multi")
 ENGINE_HOURS = ("-eh", "--engine_hours")
 ENGINE_SHIFT = ("-e", "--engine_rpm_shift")
+SPEED_SHIFT = ("-sp", "--speed_kph_shift")
+INSTALL_WIZARD_VIN = ("-iV", "--install_wizard_vin")
+ELD_MSGS_SIMULATION = ("-eld", "--eld_messages_simulation")
+ELD_MSGS_FILE_SIMULATION = ("-eld_file", "--eld_msgs_file_simulation")
 HELP = ("-h", "--help")
 
 
@@ -67,6 +75,8 @@ class Param:
         self.file_name = None
         self.rpm_value_1 = None
         self.rpm_value_2 = None
+        self.speed_value1 = None
+        self.speed_value2 = None
         self.value_1_ms = None
         self.value_2_ms = None
         self.baudrate = None
@@ -114,6 +124,14 @@ class Param:
             self.parse_engine_hours(parameters[1:])
         elif parameters[1] in ENGINE_SHIFT:
             self.parse_engine_shift(parameters[1:])
+        elif parameters[1] in INSTALL_WIZARD_VIN:
+            self.parse_install_wizard_vin(parameters[1:])
+        elif parameters[1] in ELD_MSGS_SIMULATION:
+            self.parse_eld_msgs_simulation(parameters[1:])
+        elif parameters[1] in ELD_MSGS_FILE_SIMULATION:
+            self.parse_eld_msgs_file_simulation(parameters[1:])
+        elif parameters[1] in SPEED_SHIFT:
+            self.parse_speed_shift(parameters[1:])
         else:
             print('Unknown action!\n')
             self.print_help()
@@ -289,11 +307,11 @@ class Param:
         Connect new device which cause address collision(s) on can-bus
         :return:
         """
-        if not self.__is_right_nmb_of_parameters(parameters, 2, 'Wrong number of parameters to simulate new device on '
+        if not self.__is_right_nmb_of_parameters(parameters, 3, 'Wrong number of parameters to simulate new device on '
                                                                 'can-bus'):
             self.action = None
 
-        self.nmb_msgs = self.__str_to_digit(parameters[1])
+        self.__set_param_max_time_max_tries(parameters)
 
     def parse_vin_code_single(self, parameters):
         """
@@ -343,6 +361,57 @@ class Param:
         self.value_1_ms = self.__str_to_digit(parameters[2])
         self.rpm_value_2 = self.__str_to_digit(parameters[3])
         self.value_2_ms = self.__str_to_digit(parameters[4])
+
+    def parse_speed_shift(self, parameters):
+        """
+        Parse parameters Vehicle speed shift simulation
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 5,
+                                                 'Wrong number of parameters to simulate Vehicle Speed shift'):
+            self.action = None
+
+        self.speed_value1 = self.__str_to_digit(parameters[1])
+        self.value_1_ms = self.__str_to_digit(parameters[2])
+        self.speed_value2 = self.__str_to_digit(parameters[3])
+        self.value_2_ms = self.__str_to_digit(parameters[4])
+
+    def parse_install_wizard_vin(self, parameters):
+        """
+        Broadcast F004 message and response on VIN code request
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to simulate VIN code response for Install wizard'):
+            self.action = None
+
+        self.__set_param_max_time(parameters)
+
+    def parse_eld_msgs_simulation(self, parameters):
+        """
+        Parse parameters for ELD simulation
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to simulate ELD messages'):
+            self.action = None
+
+        self.__set_param_max_time(parameters)
+
+    def parse_eld_msgs_file_simulation(self, parameters):
+        """
+        Parse parameters for ELD simulation from text file
+        :param parameters:
+        :return:
+        """
+        if not self.__is_right_nmb_of_parameters(parameters, 2,
+                                                 'Wrong number of parameters to simulate ELD messages from file'):
+            self.action = None
+
+        self.file_name = parameters[1]
 
     def __is_right_nmb_of_parameters(self, parameters, parameters_number, message):
         """

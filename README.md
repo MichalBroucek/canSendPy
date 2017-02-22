@@ -24,5 +24,4 @@ Requirement
 - Wait for VIN code request - VIN code single frame response
 - Wait for VIN code request - VIN code multiple frame response
 - Simulate Engine RPM shift from one value to another value
-- Changing can-bus baud rate (requires root access)
 

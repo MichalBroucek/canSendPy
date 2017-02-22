@@ -1,0 +1,9 @@
+# State 1: vehicle stationary 0 km/h
+speed=0;distance=2000;engine_rpm=600;engine_hours=10.5;vin=default
+duration=5
+# State 2: vehicle moving 10 km/h
+speed=10;distance=2500;engine_rpm=600;engine_hours=10.7;vin=default
+duration=5
+# State 3: vehicle stationary again 0 km/h
+speed=0;distance=3000;engine_rpm=600;engine_hours=11.2;vin=default
+duration=5

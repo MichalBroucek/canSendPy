@@ -1,0 +1,27 @@
+# State 1: Engine Off - speed 0
+speed=0;distance=17000;engine_rpm=0;engine_hours=10.7;vin=default
+duration=5
+# State 2: Engine On - speed 0
+speed=0;distance=17000;engine_rpm=600;engine_hours=10.7;vin=default
+duration=5
+# State 3: Engine On - speed 20, start ENGINE HOURS SIMULATION (11.0)
+speed=20;distance=17500;engine_rpm=600;engine_hours=11.0;vin=default
+duration=10
+# State 4: Engine On - speed 20, start ENGINE HOURS SIMULATION (11.2)
+speed=20;distance=18000;engine_rpm=600;engine_hours=11.2;vin=default
+duration=10
+# State 5: Engine On - speed 20, start ENGINE HOURS SIMULATION (11.5) - CHECK ENGINE HOURS VALUE HERE
+speed=20;distance=18000;engine_rpm=600;engine_hours=11.5;vin=default
+duration=60
+# State 6: Engine On - speed 20, start ENGINE HOURS SIMULATION (11.7) - CHECK ENGINE HOURS VALUE HERE
+speed=20;distance=18000;engine_rpm=600;engine_hours=11.7;vin=default
+duration=60
+# State 7: Engine On - speed 20, start ENGINE HOURS SIMULATION (12.0)
+speed=20;distance=18000;engine_rpm=600;engine_hours=12.0;vin=default
+duration=10
+# State 8: Engine On - speed 0, start ENGINE HOURS SIMULATION (12.0)
+speed=0;distance=18000;engine_rpm=600;engine_hours=12.0;vin=default
+duration=120
+# State 9: Engine Off - speed 0, start ENGINE HOURS SIMULATION (12.0)
+speed=0;distance=18000;engine_rpm=0;engine_hours=12.0;vin=default
+duration=240
